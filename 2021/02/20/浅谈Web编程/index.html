@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="在BS（Browser&#x2F;Server）架构下，服务器端是如何响应客户端请求的，如何处理用户不同的请求类型的，现代Web的开发框架Spring和Flask是如何工作的?">
+<meta property="og:type" content="article">
+<meta property="og:title" content="浅谈Web编程">
+<meta property="og:url" content="http://example.com/2021/02/20/%E6%B5%85%E8%B0%88Web%E7%BC%96%E7%A8%8B/index.html">
+<meta property="og:site_name" content="fly rain">
+<meta property="og:description" content="在BS（Browser&#x2F;Server）架构下，服务器端是如何响应客户端请求的，如何处理用户不同的请求类型的，现代Web的开发框架Spring和Flask是如何工作的?">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/hexo/pzYvZrP5cjFSlN4.png">
+<meta property="og:image" content="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/hexo/image-20210220151134825.png">
+<meta property="og:image" content="https://pham-nuwens-document.readthedocs.io/zh/latest/_images/037DA780-F8DA-47EF-AE7E-3D10A9380CD1.png">
+<meta property="og:image" content="https://docs.spring.io/spring-framework/docs/3.2.x/spring-framework-reference/html/images/mvc.png">
+<meta property="article:published_time" content="2021-02-20T03:40:02.000Z">
+<meta property="article:modified_time" content="2021-02-22T12:31:48.381Z">
+<meta property="article:author" content="Feiyu">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="Flask">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="CGI">
+<meta property="article:tag" content="WSGI">
+<meta property="article:tag" content="Servlet">
+<meta property="article:tag" content="SpringMVC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/hexo/pzYvZrP5cjFSlN4.png">
+
+<link rel="canonical" href="http://example.com/2021/02/20/%E6%B5%85%E8%B0%88Web%E7%BC%96%E7%A8%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>浅谈Web编程 | fly rain</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">fly rain</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/02/20/%E6%B5%85%E8%B0%88Web%E7%BC%96%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Feiyu">
+      <meta itemprop="description" content="Sit still, my heart, do not raise your dust. Let the world find its way to you.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="fly rain">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          浅谈Web编程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-02-20 11:40:02" itemprop="dateCreated datePublished" datetime="2021-02-20T11:40:02+08:00">2021-02-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-02-22 20:31:48" itemprop="dateModified" datetime="2021-02-22T20:31:48+08:00">2021-02-22</time>
+              </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine: </span>
+    
+    <a title="valine" href="/2021/02/20/%E6%B5%85%E8%B0%88Web%E7%BC%96%E7%A8%8B/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/02/20/%E6%B5%85%E8%B0%88Web%E7%BC%96%E7%A8%8B/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在BS（Browser/Server）架构下，服务器端是如何响应客户端请求的，如何处理用户不同的请求类型的，现代Web的开发框架Spring和Flask是如何工作的?</p>
+ <a id="more"></a>
+
+<h4 id="CGI"><a href="#CGI" class="headerlink" title="CGI"></a>CGI</h4><p>在BS（Browser/Server）架构下，服务器的工作模式有所不同，客户端发来的不仅仅是标准IO的类型，更多的是各种表单类型，还包括浏览器的一些特性例如cookie等，Web服务器端可以将这些变量保存在环境变量中，交给外部的应用来解析出变量的内容，然后外部应用返回一个HTML页面给Web服务器，Web服务器将这个页面返回给客户端，这就使用到了CGI，例如表单处理的流程图如下：</p>
+<img src="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/hexo/pzYvZrP5cjFSlN4.png" alt="image-20210220094657376"  />
+
+
+
+<p>CGI（Common Gateway Interface）是一种让Web服务器能够执行外部程序处理用户请求的接口规范，CGI脚本就是处理表单返回HTML（附带有效头文件）的脚本。</p>
+<h4 id="CGI脚本解析出错了会导致什么情况"><a href="#CGI脚本解析出错了会导致什么情况" class="headerlink" title="CGI脚本解析出错了会导致什么情况"></a>CGI脚本解析出错了会导致什么情况</h4><p>当CGI脚本崩溃的时候（通常代码出错导致脚本无法处理request请求），CGI脚本会返回给Web服务器错误的回溯信息，这些信息因为不附带有效的头文件也不是HTML类型，所以Web服务器无法理解会抛弃这个响应，返回500错误，也就是常见的服务器错误（实则是服务器所执行的应用程序出错），但是现在的IDE集成的原因，有些Web环境（例如Python）都是以错误回溯消息代替500错误</p>
+<h4 id="c-实现的简单CGI脚本"><a href="#c-实现的简单CGI脚本" class="headerlink" title="c++实现的简单CGI脚本"></a>c++实现的简单CGI脚本</h4><p>如果用c++实现一个简单的CGI服务器脚本程序，我们需要做的是：</p>
+<ol>
+<li>服务器端监听端口</li>
+<li>接受请求，完成连接</li>
+<li>fork出CGI处理进程来处理request</li>
+<li>CGI处理进程向标准输出写入HTML</li>
+<li>HTML输出重定向到TCP连接套接字</li>
+</ol>
+<h4 id="CGI缺点与改进"><a href="#CGI缺点与改进" class="headerlink" title="CGI缺点与改进"></a>CGI缺点与改进</h4><p>CGI的缺点在于如果针对每一个这样的连接都fork出一个子进程，那么在面对多连接请求的时候系统很快就会崩溃，所以有了以下两种改进方法：</p>
+<ul>
+<li>改进方法1：服务器集成，代表为Apache HTTP Web服务器，服务器根据对应的API通过一组预先创建的进程或者线程来工作</li>
+<li>改进方法2：CGI作为外部进程在服务器外部运行，代表为FastCGI</li>
+</ul>
+<h4 id="J2EE：Apache-HTTP-Web和Tomcat"><a href="#J2EE：Apache-HTTP-Web和Tomcat" class="headerlink" title="J2EE：Apache HTTP Web和Tomcat"></a>J2EE：Apache HTTP Web和Tomcat</h4><p>Apache HTTP Web是将这个外部应用模块集成到服务器端中去，将原来fork的部分替换成：1、提前创建多个进程，2、将处理request替换为函数调用。这样就大大提高了并发的性能，但是本质上还是返回HTML也就是静态页面，所以在J2EE中还有大名鼎鼎的Tomcat来处理动态页面（例如JSP，事实上Tomcat也可以处理静态页面，不过效率比Apache HTTP Web低），而Tomcat本质上是一个Servlet容器，处理流程如下：</p>
+<ol>
+<li>客户端（通常都是浏览器）访问Web服务器，发送HTTP请求。</li>
+<li>Web服务器接收到请求后，传递给Servlet容器。</li>
+<li>Servlet容器加载Servlet，产生Servlet实例后，向其传递表示请求和响应的对象。</li>
+<li>Servlet实例使用请求对象得到客户端的请求信息，然后进行相应的处理。</li>
+<li>Servlet实例将处理结果通过响应对象发送回客户端，容器负责确保响应正确送出，同时将控制返回给Web服务器。</li>
+</ol>
+<p>可以看出Apache HTTP Web和Tomcat都是将外部应用以不同方式集成到服务器端，这样做的好处是集成度高，缺点是耦合性高，无论是实现的语言还是安全性</p>
+<h4 id="Python：WSGI"><a href="#Python：WSGI" class="headerlink" title="Python：WSGI"></a>Python：WSGI</h4><p>CGI作为外部进程在服务器外部运行，耦合性低，但是与服务器集成的接口太过灵活成为开发者的负担，WCGI（Web Server Gateway Interface）就是Python Web服务器网类接口标准</p>
+<p>WSGI：是定义的接口，目标在Web服务器和Web框架层之间提供一个通用的API标准，形成统一的调用方式。WSGI有两个参数：1、含有服务器环境变量的字典，2、可调用对象</p>
+<p>示例代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">wsgi_app</span>(<span class="params">env, start_response</span>):</span></span><br><span class="line">  status = <span class="string">&#x27;200 OK&#x27;</span></span><br><span class="line">  headers = ((<span class="string">&#x27;Content-type&#x27;</span>, <span class="string">&#x27;text/plain&#x27;</span>))</span><br><span class="line">  start_response(status, headers)</span><br><span class="line">  <span class="keyword">return</span> [<span class="string">&#x27;Hello world!&#x27;</span>]</span><br></pre></td></tr></table></figure>
+<p>start_response是一个可调用对象，类似如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">start_response</span>(<span class="params">status, headers</span>):</span></span><br><span class="line">  将status写入body</span><br><span class="line">  <span class="keyword">for</span> header <span class="keyword">in</span> headers:</span><br><span class="line">    将header写入body</span><br><span class="line">  <span class="keyword">return</span> body.write  <span class="comment"># 在Servlet中是PrintWriter对象向浏览器输入数据流</span></span><br></pre></td></tr></table></figure>
+<h4 id="现代Web开发"><a href="#现代Web开发" class="headerlink" title="现代Web开发"></a>现代Web开发</h4><p>现在Web框架下有众多优秀的框架，集成了众多功能，让Web开发变得更加容易，实际上服务器端通信的方式仍没有改变，例如：</p>
+<p>Python的Web框架下通信（以Flask为例）</p>
+<p>在Flask文档中有以下说明：当安装 Flask 时，以下配套软件会被自动安装。Werkzeug [<a target="_blank" rel="noopener" href="https://palletsprojects.com/p/werkzeug/]">https://palletsprojects.com/p/werkzeug/]</a> 用于实现 WSGI ，应用和服务之间的标准 Python 接口。”</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">“<span class="keyword">from</span> flask <span class="keyword">import</span> Flask</span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route(<span class="params"><span class="string">&#x27;/&#x27;</span></span>)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">hello_world</span>():</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&#x27;Hello, World!”</span></span><br></pre></td></tr></table></figure>
+<p>接着：“我们导入了 Flask 类。 该类的实例将会成为我们的 WSGI 应用。”</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">“在运行应用之前，需要在终端里导出 FLASK_APP 环境变量:</span><br><span class="line">$ export FLASK_APP&#x3D;hello.py</span><br><span class="line">$ flask run</span><br><span class="line"> * Running on http:&#x2F;&#x2F;127.0.0.1:5000&#x2F;”</span><br></pre></td></tr></table></figure>
+<p>总结如下图所示：</p>
+<p><img src="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/hexo/image-20210220151134825.png" alt="image-20210220151134825"></p>
+<p>Flask具体工作流程图如下：</p>
+<p><img src="https://pham-nuwens-document.readthedocs.io/zh/latest/_images/037DA780-F8DA-47EF-AE7E-3D10A9380CD1.png" alt="../_images/037DA780-F8DA-47EF-AE7E-3D10A9380CD1.png"></p>
+<p>SpringMVC工作流程图</p>
+<p><img src="https://docs.spring.io/spring-framework/docs/3.2.x/spring-framework-reference/html/images/mvc.png" alt="img"></p>
+<p>可以看出Python和Java的一些Web框架还是参照Http服务器 + 外部处理应用程序的方式来实现，Http服务器部分负责接受分发request和返回response，外部处理应用程序部分负责request处理，并且外部处理程序与模板以及框架的其他组件之间交互使得框架有很高的开发效率</p>
+<p>参考：</p>
+<ul>
+<li>Hedand M L. Python 核心编程[J]. 2010.</li>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Common_Gateway_Interface#Using_CGI_scripts">Wikipedia: Common Gateway Interface</a></li>
+<li><a target="_blank" rel="noopener" href="https://birdben.github.io/2017/03/05/Java/Python%E5%92%8CJava%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%80%9A%E4%BF%A1%E5%AE%9E%E7%8E%B0%E7%9A%84%E7%90%86%E8%A7%A3%E5%92%8C%E6%AF%94%E8%BE%83/">Python和Java服务器通信实现的理解和比较</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.spring.io/spring-framework/docs/3.2.x/spring-framework-reference/html/mvc.html">SpringMVC文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://dormousehole.readthedocs.io/en/latest/foreword.html">Flask中文文档</a></li>
+</ul>
+<p>注：</p>
+<ul>
+<li>因水平有限个人总结难免出错</li>
+<li>欢迎指正</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/python/" rel="tag"># python</a>
+              <a href="/tags/Flask/" rel="tag"># Flask</a>
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/CGI/" rel="tag"># CGI</a>
+              <a href="/tags/WSGI/" rel="tag"># WSGI</a>
+              <a href="/tags/Servlet/" rel="tag"># Servlet</a>
+              <a href="/tags/SpringMVC/" rel="tag"># SpringMVC</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/02/16/TCP%E8%BF%9E%E6%8E%A5%E4%B8%8E%E9%98%BB%E5%A1%9EIO%E6%A8%A1%E5%9E%8B/" rel="prev" title="TCP连接与阻塞IO模型">
+      <i class="fa fa-chevron-left"></i> TCP连接与阻塞IO模型
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/02/21/Flask%E9%9F%B3%E9%A2%91%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E4%BB%A5%E5%8F%8A%E6%96%87%E6%A1%A3%E9%83%A8%E5%88%86%E6%91%98%E5%BD%95/" rel="next" title="Flask音频文件上传以及文档部分摘录">
+      Flask音频文件上传以及文档部分摘录 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#CGI"><span class="nav-number">1.</span> <span class="nav-text">CGI</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CGI%E8%84%9A%E6%9C%AC%E8%A7%A3%E6%9E%90%E5%87%BA%E9%94%99%E4%BA%86%E4%BC%9A%E5%AF%BC%E8%87%B4%E4%BB%80%E4%B9%88%E6%83%85%E5%86%B5"><span class="nav-number">2.</span> <span class="nav-text">CGI脚本解析出错了会导致什么情况</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#c-%E5%AE%9E%E7%8E%B0%E7%9A%84%E7%AE%80%E5%8D%95CGI%E8%84%9A%E6%9C%AC"><span class="nav-number">3.</span> <span class="nav-text">c++实现的简单CGI脚本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CGI%E7%BC%BA%E7%82%B9%E4%B8%8E%E6%94%B9%E8%BF%9B"><span class="nav-number">4.</span> <span class="nav-text">CGI缺点与改进</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#J2EE%EF%BC%9AApache-HTTP-Web%E5%92%8CTomcat"><span class="nav-number">5.</span> <span class="nav-text">J2EE：Apache HTTP Web和Tomcat</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Python%EF%BC%9AWSGI"><span class="nav-number">6.</span> <span class="nav-text">Python：WSGI</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8E%B0%E4%BB%A3Web%E5%BC%80%E5%8F%91"><span class="nav-number">7.</span> <span class="nav-text">现代Web开发</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Feiyu</p>
+  <div class="site-description" itemprop="description">Sit still, my heart, do not raise your dust. Let the world find its way to you.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">60</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Feiyu Zhan</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'rkEqz5mW38LoOGidQFA2EDTL-gzGzoHsz',
+      appKey     : 'u449xmMSu4rkxkrwbBP2Cs64',
+      placeholder: "在快乐和悲伤都写在我们的脸上的那些时代里...",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

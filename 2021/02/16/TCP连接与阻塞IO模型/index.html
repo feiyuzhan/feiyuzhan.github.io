@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="有台阿里云的Server闲置，做一些TCP连接相关的学习与简单测试">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TCP连接与阻塞IO模型">
+<meta property="og:url" content="http://example.com/2021/02/16/TCP%E8%BF%9E%E6%8E%A5%E4%B8%8E%E9%98%BB%E5%A1%9EIO%E6%A8%A1%E5%9E%8B/index.html">
+<meta property="og:site_name" content="fly rain">
+<meta property="og:description" content="有台阿里云的Server闲置，做一些TCP连接相关的学习与简单测试">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/hexo/tcp%E8%BF%9E%E6%8E%A5%E8%BF%87%E7%A8%8B.png">
+<meta property="article:published_time" content="2021-02-16T14:48:53.000Z">
+<meta property="article:modified_time" content="2021-02-19T11:57:25.339Z">
+<meta property="article:author" content="Feiyu">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="TCP">
+<meta property="article:tag" content="网络编程">
+<meta property="article:tag" content="IO模型">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/hexo/tcp%E8%BF%9E%E6%8E%A5%E8%BF%87%E7%A8%8B.png">
+
+<link rel="canonical" href="http://example.com/2021/02/16/TCP%E8%BF%9E%E6%8E%A5%E4%B8%8E%E9%98%BB%E5%A1%9EIO%E6%A8%A1%E5%9E%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>TCP连接与阻塞IO模型 | fly rain</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">fly rain</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/02/16/TCP%E8%BF%9E%E6%8E%A5%E4%B8%8E%E9%98%BB%E5%A1%9EIO%E6%A8%A1%E5%9E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Feiyu">
+      <meta itemprop="description" content="Sit still, my heart, do not raise your dust. Let the world find its way to you.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="fly rain">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          TCP连接与阻塞IO模型
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-02-16 22:48:53" itemprop="dateCreated datePublished" datetime="2021-02-16T22:48:53+08:00">2021-02-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-02-19 19:57:25" itemprop="dateModified" datetime="2021-02-19T19:57:25+08:00">2021-02-19</time>
+              </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine: </span>
+    
+    <a title="valine" href="/2021/02/16/TCP%E8%BF%9E%E6%8E%A5%E4%B8%8E%E9%98%BB%E5%A1%9EIO%E6%A8%A1%E5%9E%8B/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/02/16/TCP%E8%BF%9E%E6%8E%A5%E4%B8%8E%E9%98%BB%E5%A1%9EIO%E6%A8%A1%E5%9E%8B/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>有台阿里云的Server闲置，做一些TCP连接相关的学习与简单测试</p>
+ <a id="more"></a>
+
+<p>Server环境：</p>
+<ul>
+<li>centos</li>
+<li>Python 2.7.5</li>
+</ul>
+<h3 id="echo-Server端"><a href="#echo-Server端" class="headerlink" title="echo-Server端"></a>echo-Server端</h3><p>简单的echo_tcp_server.py 返回客户端发送的内容：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python2</span></span><br><span class="line"><span class="keyword">from</span> socket <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">HOST = <span class="string">&#x27;&#x27;</span></span><br><span class="line">PORT = <span class="number">8080</span></span><br><span class="line">BUFSIZE = <span class="number">1024</span></span><br><span class="line">ADDR = (HOST, PORT)</span><br><span class="line"></span><br><span class="line">tcp_server_socket = socket(AF_INET, SOCK_STREAM)  <span class="comment"># step1: socket()</span></span><br><span class="line">tcp_server_socket.bind(ADDR)  <span class="comment"># step2: bind()</span></span><br><span class="line">tcp_server_socket.listen(<span class="number">10</span>)  <span class="comment"># parameter: backlog size, step3: listen()</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">    print(<span class="string">&quot;listen...&quot;</span>)</span><br><span class="line">    tcp_client_sock, addr = tcp_server_socket.accept()  <span class="comment"># step4: accept()</span></span><br><span class="line">    print(<span class="string">&quot;connect...&quot;</span>)  <span class="comment"># connect with client</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        data = tcp_client_sock.recv(BUFSIZE)  <span class="comment"># step5:read()</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> data:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        print(<span class="built_in">str</span>(data))</span><br><span class="line">        tcp_client_sock.send(data)  <span class="comment"># step6:write()</span></span><br><span class="line">    tcp_client_sock.close()</span><br><span class="line">tcp_server_socket.close()</span><br></pre></td></tr></table></figure>
+<p>修改成可执行权限，启动，然后</p>
+<h3 id="本地启动echo-tcp客户端1-Python3-8"><a href="#本地启动echo-tcp客户端1-Python3-8" class="headerlink" title="本地启动echo-tcp客户端1(Python3.8)"></a>本地启动echo-tcp客户端1(Python3.8)</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">from</span> socket <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> pip._vendor.distlib.compat <span class="keyword">import</span> raw_input</span><br><span class="line"></span><br><span class="line">HOST = <span class="string">&#x27;101.200.158.XXX&#x27;</span></span><br><span class="line">PORT = <span class="number">8080</span>  <span class="comment"># 需要云主机开放的端口</span></span><br><span class="line">BUFSIZE = <span class="number">1024</span></span><br><span class="line">ADDR = (HOST, PORT)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">tcp_client</span>():</span></span><br><span class="line">    tcp_client_socket = socket(AF_INET, SOCK_STREAM)  <span class="comment"># step1: socket()</span></span><br><span class="line">    tcp_client_socket.connect(ADDR)  <span class="comment"># step2: connect()</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        data = raw_input(<span class="string">&#x27;&gt; &#x27;</span>)</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> data:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        tcp_client_socket.send(<span class="built_in">bytes</span>(data, <span class="string">&#x27;utf-8&#x27;</span>))  <span class="comment"># step3:write(),默认阻塞</span></span><br><span class="line">        recv = tcp_client_socket.recv(BUFSIZE)  <span class="comment"># step4:read(),默认阻塞</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> recv:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        print(<span class="built_in">str</span>(recv, <span class="string">&#x27;utf-8&#x27;</span>))</span><br><span class="line">    tcp_client_socket.close()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    tcp_client()</span><br></pre></td></tr></table></figure>
+<p>输入输出：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Server端：</span><br><span class="line">  listen...</span><br><span class="line">  connect...</span><br><span class="line">  111</span><br><span class="line">  222</span><br><span class="line">Client1端：</span><br><span class="line">  &gt; 111</span><br><span class="line">  111</span><br><span class="line">  &gt; 222</span><br><span class="line">  222</span><br></pre></td></tr></table></figure>
+<p>这是三次握手后，echo测试，结果是正常的</p>
+<h3 id="这时候同时启动Client端2去连接会发生什么"><a href="#这时候同时启动Client端2去连接会发生什么" class="headerlink" title="这时候同时启动Client端2去连接会发生什么"></a>这时候同时启动Client端2去连接会发生什么</h3><p>客户端1：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt; 111</span><br><span class="line">111</span><br><span class="line">&gt; </span><br></pre></td></tr></table></figure>
+<p>客户端2：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt; 22</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Server端：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">listen...</span><br><span class="line">connect...</span><br><span class="line">111</span><br></pre></td></tr></table></figure>
+<p>并没有接收到客户端2发送的内容</p>
+<p>参考连接图：</p>
+<p><img src="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/hexo/tcp%E8%BF%9E%E6%8E%A5%E8%BF%87%E7%A8%8B.png" alt="tcp连接"></p>
+<p>此时TCP-Server端已经被阻塞在于Client1连接的write系统调用处，所以无法响应Client2的connect请求，而客户端2被阻塞在三次握手位置，此时如果断开客户端1的连接，会出现：</p>
+<p>Server端，断开与客户端1的连接，重新回到listen状态，然后accept了客户端2（证明客户端2发往Server端的连接没有被drop掉）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">listen...</span><br><span class="line">connect...</span><br><span class="line">111</span><br><span class="line">listen...</span><br><span class="line">connect...</span><br><span class="line">22</span><br></pre></td></tr></table></figure>
+<p>客户端1主动close连接：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&gt; 111</span><br><span class="line">111</span><br><span class="line">&gt; </span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br></pre></td></tr></table></figure>
+<p>客户端2，得到服务器的返回：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt; 22</span><br><span class="line">22</span><br><span class="line">&gt; </span><br></pre></td></tr></table></figure>
+
+
+<h3 id="阻塞IO下模拟fork操作"><a href="#阻塞IO下模拟fork操作" class="headerlink" title="阻塞IO下模拟fork操作"></a>阻塞IO下模拟fork操作</h3><p>Linux下可以fork出子进程来处理IO，主进程处理TCP连接，这里使用多线程来模拟fork操作：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python2</span></span><br><span class="line"><span class="keyword">from</span> socket <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> threading <span class="keyword">import</span> Thread</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">HOST = <span class="string">&#x27;&#x27;</span></span><br><span class="line">PORT = <span class="number">8080</span></span><br><span class="line">BUFSIZE = <span class="number">1024</span></span><br><span class="line">ADDR = (HOST, PORT)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">one_tcp_server</span>(<span class="params">client_socket, addr</span>):</span></span><br><span class="line">    print(<span class="string">&quot;connect...&quot;</span>)  <span class="comment"># connect with client</span></span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        data = client_socket.recv(BUFSIZE)  <span class="comment"># step5:read()</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> data:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        print(<span class="built_in">str</span>(data))</span><br><span class="line">        client_socket.send(data)  <span class="comment"># step6:write()</span></span><br><span class="line">    client_socket.close()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">tcp_servers</span>():</span></span><br><span class="line">    tcp_server_socket = socket(AF_INET, SOCK_STREAM)  <span class="comment"># step1: socket()</span></span><br><span class="line">    tcp_server_socket.bind(ADDR)  <span class="comment"># step2: bind()</span></span><br><span class="line">    tcp_server_socket.listen(<span class="number">10</span>)  <span class="comment"># parameter: backlog size, step3: listen()</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        print(<span class="string">&quot;listen...&quot;</span>)</span><br><span class="line">        tcp_client_sock, addr = tcp_server_socket.accept()  <span class="comment"># step4: accept()</span></span><br><span class="line">        t = Thread(target=one_tcp_server, args=(tcp_client_sock, addr))</span><br><span class="line">        t.start()</span><br><span class="line">    tcp_server_socket.close()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    tcp_servers()</span><br></pre></td></tr></table></figure>
+<p>再用客户端1和客户端2去尝试连接：</p>
+<p>客户端1后输入：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt; from客户端1</span><br><span class="line">from客户端1</span><br><span class="line">&gt; </span><br></pre></td></tr></table></figure>
+<p>客户端2先输入：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt; from客户端2</span><br><span class="line">from客户端2</span><br><span class="line">&gt; </span><br></pre></td></tr></table></figure>
+<p>Server端：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">connect...</span><br><span class="line">listen...</span><br><span class="line">connect...</span><br><span class="line">listen...</span><br><span class="line">from客户端2</span><br><span class="line">from客户端1</span><br></pre></td></tr></table></figure>
+<p>这里TCP Server端的主线程会阻塞在accept()处直到有连接请求，一旦建立连接后，会启动一个线程去处理IO事件，并不影响处理下一个accept请求，相对只有一个主线程的情况下会更高效，但是这种模式也存在问题：</p>
+<h4 id="问题1：创建线程花费时间长"><a href="#问题1：创建线程花费时间长" class="headerlink" title="问题1：创建线程花费时间长"></a>问题1：创建线程花费时间长</h4><p>这里也可以事先创建N个线程，然后事件到达的时候从线程队列中取出去执行，这样减少了创建线程的开销，否则服务器在大量请求connect连接同时到达的时候压力会很大</p>
+<h4 id="问题2：资源占用问题"><a href="#问题2：资源占用问题" class="headerlink" title="问题2：资源占用问题"></a>问题2：资源占用问题</h4><p>由于TCP是长连接，如果1000个连接中平均只有几十个是保持活跃的，这时候去维护1000个线程队列明显是不明智的。这就需要异步IO，改用事件触发的机制来处理IO操作</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/python/" rel="tag"># python</a>
+              <a href="/tags/TCP/" rel="tag"># TCP</a>
+              <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" rel="tag"># 网络编程</a>
+              <a href="/tags/IO%E6%A8%A1%E5%9E%8B/" rel="tag"># IO模型</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/02/10/%E7%AC%94%E8%AE%B0%E7%AD%96%E7%95%A5%E5%92%8Cmarkdown%E6%96%87%E6%A1%A3%E5%9B%BE%E7%89%87%E5%A4%84%E7%90%86%E8%84%9A%E6%9C%AC/" rel="prev" title="笔记策略和markdown文档图片处理脚本">
+      <i class="fa fa-chevron-left"></i> 笔记策略和markdown文档图片处理脚本
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/02/20/%E6%B5%85%E8%B0%88Web%E7%BC%96%E7%A8%8B/" rel="next" title="浅谈Web编程">
+      浅谈Web编程 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#echo-Server%E7%AB%AF"><span class="nav-number">1.</span> <span class="nav-text">echo-Server端</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E5%90%AF%E5%8A%A8echo-tcp%E5%AE%A2%E6%88%B7%E7%AB%AF1-Python3-8"><span class="nav-number">2.</span> <span class="nav-text">本地启动echo-tcp客户端1(Python3.8)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%99%E6%97%B6%E5%80%99%E5%90%8C%E6%97%B6%E5%90%AF%E5%8A%A8Client%E7%AB%AF2%E5%8E%BB%E8%BF%9E%E6%8E%A5%E4%BC%9A%E5%8F%91%E7%94%9F%E4%BB%80%E4%B9%88"><span class="nav-number">3.</span> <span class="nav-text">这时候同时启动Client端2去连接会发生什么</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%BB%E5%A1%9EIO%E4%B8%8B%E6%A8%A1%E6%8B%9Ffork%E6%93%8D%E4%BD%9C"><span class="nav-number">4.</span> <span class="nav-text">阻塞IO下模拟fork操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%97%AE%E9%A2%981%EF%BC%9A%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B%E8%8A%B1%E8%B4%B9%E6%97%B6%E9%97%B4%E9%95%BF"><span class="nav-number">4.1.</span> <span class="nav-text">问题1：创建线程花费时间长</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%97%AE%E9%A2%982%EF%BC%9A%E8%B5%84%E6%BA%90%E5%8D%A0%E7%94%A8%E9%97%AE%E9%A2%98"><span class="nav-number">4.2.</span> <span class="nav-text">问题2：资源占用问题</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Feiyu</p>
+  <div class="site-description" itemprop="description">Sit still, my heart, do not raise your dust. Let the world find its way to you.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">60</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Feiyu Zhan</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'rkEqz5mW38LoOGidQFA2EDTL-gzGzoHsz',
+      appKey     : 'u449xmMSu4rkxkrwbBP2Cs64',
+      placeholder: "在快乐和悲伤都写在我们的脸上的那些时代里...",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

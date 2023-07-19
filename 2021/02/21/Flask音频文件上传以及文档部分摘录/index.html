@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Flask-uploads上传文件并不复杂，但是有些问题文档中没有说的详细，使用的时候可能会遇到问题，另外摘录了一部分Flask文档，内容包括：蓝图、装饰器、模板、文件上传、缓存、表单验证">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flask音频文件上传以及文档部分摘录">
+<meta property="og:url" content="http://example.com/2021/02/21/Flask%E9%9F%B3%E9%A2%91%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E4%BB%A5%E5%8F%8A%E6%96%87%E6%A1%A3%E9%83%A8%E5%88%86%E6%91%98%E5%BD%95/index.html">
+<meta property="og:site_name" content="fly rain">
+<meta property="og:description" content="Flask-uploads上传文件并不复杂，但是有些问题文档中没有说的详细，使用的时候可能会遇到问题，另外摘录了一部分Flask文档，内容包括：蓝图、装饰器、模板、文件上传、缓存、表单验证">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-02-21T08:33:15.000Z">
+<meta property="article:modified_time" content="2021-02-23T13:42:38.736Z">
+<meta property="article:author" content="Feiyu">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="Flask">
+<meta property="article:tag" content="文件上传">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2021/02/21/Flask%E9%9F%B3%E9%A2%91%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E4%BB%A5%E5%8F%8A%E6%96%87%E6%A1%A3%E9%83%A8%E5%88%86%E6%91%98%E5%BD%95/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>Flask音频文件上传以及文档部分摘录 | fly rain</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">fly rain</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/02/21/Flask%E9%9F%B3%E9%A2%91%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E4%BB%A5%E5%8F%8A%E6%96%87%E6%A1%A3%E9%83%A8%E5%88%86%E6%91%98%E5%BD%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Feiyu">
+      <meta itemprop="description" content="Sit still, my heart, do not raise your dust. Let the world find its way to you.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="fly rain">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Flask音频文件上传以及文档部分摘录
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-02-21 16:33:15" itemprop="dateCreated datePublished" datetime="2021-02-21T16:33:15+08:00">2021-02-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-02-23 21:42:38" itemprop="dateModified" datetime="2021-02-23T21:42:38+08:00">2021-02-23</time>
+              </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine: </span>
+    
+    <a title="valine" href="/2021/02/21/Flask%E9%9F%B3%E9%A2%91%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E4%BB%A5%E5%8F%8A%E6%96%87%E6%A1%A3%E9%83%A8%E5%88%86%E6%91%98%E5%BD%95/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/02/21/Flask%E9%9F%B3%E9%A2%91%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E4%BB%A5%E5%8F%8A%E6%96%87%E6%A1%A3%E9%83%A8%E5%88%86%E6%91%98%E5%BD%95/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Flask-uploads上传文件并不复杂，但是有些问题文档中没有说的详细，使用的时候可能会遇到问题，另外摘录了一部分Flask文档，内容包括：蓝图、装饰器、模板、文件上传、缓存、表单验证</p>
+ <a id="more"></a>
+
+<h3 id="Flask-uploads上传音频文件"><a href="#Flask-uploads上传音频文件" class="headerlink" title="Flask-uploads上传音频文件"></a>Flask-uploads上传音频文件</h3><p>Flask-uploads上传音频文件大致流程如下：</p>
+<ol>
+<li><p>结构：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">|--uploads</span><br><span class="line">|    |--views.py</span><br><span class="line">|    |--models.py</span><br><span class="line">|--templates/</span><br><span class="line">|    |--upload/</span><br><span class="line">|       |--upload.html</span><br><span class="line">|--app.py</span><br><span class="line">|--config.py</span><br></pre></td></tr></table></figure></li>
+<li><p>在view中新建UploadSet实例，UploadSet代码在下面。需要这样配置：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">audios= UploadSet(<span class="string">&#x27;audios&#x27;</span>)  <span class="comment"># UploadSet的源码见后面</span></span><br></pre></td></tr></table></figure>
+<p>第一个参数name需要注意的有两点：一是参数名不能有下划线，二是name需要与后续配置参数一致，默认name是files，extensions和default_dest在config.py中配置，这里配置的extensions会被configuration中的<code>UPLOADED_X_ALLOW</code> and <code>UPLOADED_X_DENY</code> 配置覆盖（X对应这里实例中name的大写，保持一致，默认的name是files，所以默认的configuration就是UPLOADED_FILES_ALLOW这种格式 ）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">UploadSet</span>(<span class="params"><span class="built_in">object</span></span>):</span></span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, name=<span class="string">&#x27;files&#x27;</span>, extensions=DEFAULTS, default_dest=<span class="literal">None</span></span>):</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> name.isalnum():</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;Name must be alphanumeric (no underscores)&quot;</span>)</span><br><span class="line">        self.name = name</span><br><span class="line">        self.extensions = extensions</span><br><span class="line">        self._config = <span class="literal">None</span></span><br><span class="line">        self.default_dest = default_dest</span><br></pre></td></tr></table></figure></li>
+<li><p>配置config.py和app.py，这里需要在app初始化的时候配置好环境，其中存储路径是必选的，否则会报错找不到配置<br>可以在config.py中配置然后引入app.py：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Config</span>:</span></span><br><span class="line">    UPLOADED_AUDIOS_DEST = path  <span class="comment"># AUDIOS对应UploadSet中name的大写</span></span><br><span class="line">    UPLOADED_AUDIOS_ALLOW = [<span class="string">&#x27;mp3&#x27;</span>, <span class="string">&#x27;wav&#x27;</span>]  <span class="comment"># 合法的文件后缀</span></span><br></pre></td></tr></table></figure>
+<p>也可以在app.py中这样配置：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">app.config[<span class="string">&#x27;MAX_CONTENT_LENGTH&#x27;</span>] = <span class="number">32</span> * <span class="number">1024</span> * <span class="number">1024</span>  <span class="comment"># 最大上传文件大小</span></span><br></pre></td></tr></table></figure></li>
+<li><p>将配置导入app，在app.py中configure_uploads(app, audios)，如果有多个UploadSet的实例，可以使用configure_uploads(app, [audios, other_instance, ….])，这里需要from flask_uploads import configure_uploads，同时导入audios所在的模块，如果configure_uploads报错，需要检查前两步，一般是name出错或者配置的位置不对导致循环import</p>
+</li>
+<li><p>如果要存入本地db可以在models.py建表（可选）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">UploadAudio</span>(<span class="params">db.Model</span>):</span></span><br><span class="line">    __tablename__ = <span class="string">&#x27;uploadaudio&#x27;</span></span><br><span class="line">    <span class="built_in">id</span> = db.Column(db.Integer, autoincrement=<span class="literal">True</span>, primary_key=<span class="literal">True</span>)</span><br><span class="line">    name = db.Column(db.String(<span class="number">256</span>), unique=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    path = db.Column(db.String)</span><br><span class="line">    url = db.Column(db.String)</span><br><span class="line">    create_time = db.Column(db.DateTime, default=datetime.utcnow)</span><br></pre></td></tr></table></figure></li>
+<li><p>上传HTML页面，这里也可以使用FlaskForm（使用FlaskForm需要在蓝图下新建forms.py）</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">h1</span>&gt;</span>Upload new Audio Files<span class="tag">&lt;/<span class="name">h1</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">form</span> <span class="attr">method</span>=<span class="string">POST</span> <span class="attr">enctype</span>=<span class="string">multipart/form-data</span> <span class="attr">action</span>=<span class="string">&quot;&#123;&#123; url_for(&#x27;upload_audio&#x27;) &#125;&#125;&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">file</span> <span class="attr">name</span>=<span class="string">audio</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">button</span> <span class="attr">type</span>=<span class="string">&quot;submit&quot;</span>&gt;</span>Submit<span class="tag">&lt;/<span class="name">button</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">form</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
+<li><p>在views.py中编写处理函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">upload_audio</span>():</span></span><br><span class="line">    <span class="keyword">if</span> request.method == <span class="string">&#x27;POST&#x27;</span> <span class="keyword">and</span> <span class="string">&#x27;audio&#x27;</span> <span class="keyword">in</span> request.files:</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            filename = audios.save(request.files[<span class="string">&#x27;audio&#x27;</span>])</span><br><span class="line">        <span class="keyword">except</span> UploadNotAllowed :</span><br><span class="line">            flash(<span class="string">&quot;File format is not allowed!&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span> render_template(<span class="string">&#x27;upload.html&#x27;</span>)</span><br><span class="line">        url = <span class="string">&#x27;&#x27;</span>  <span class="comment"># todo get url</span></span><br><span class="line">        rec_audio = UploadAudio(name=filename,</span><br><span class="line">                                  path=os.path.join(</span><br><span class="line">                                      current_app.config[<span class="string">&#x27;UPLOADED_AUDIOS_DEST&#x27;</span>], filename),</span><br><span class="line">                                  url=url)</span><br><span class="line">        db.session.add(rec_audio)</span><br><span class="line">        db.session.commit</span><br><span class="line">        flash(<span class="string">&quot;audio saved.&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> redirect(url_for(<span class="string">&#x27;show_audios&#x27;</span>))</span><br><span class="line">    <span class="keyword">return</span> render_template(<span class="string">&#x27;upload.html&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+</li>
+</ol>
+<h2 id="Flask文档部分摘录"><a href="#Flask文档部分摘录" class="headerlink" title="Flask文档部分摘录"></a>Flask文档部分摘录</h2><h3 id="运行应用-开发模式"><a href="#运行应用-开发模式" class="headerlink" title="运行应用-开发模式"></a>运行应用-开发模式</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">“在 Linux and Mac 下：</span><br><span class="line"></span><br><span class="line">$ export FLASK_APP&#x3D;flaskr</span><br><span class="line">$ export FLASK_ENV&#x3D;development</span><br><span class="line">$ flask run</span><br><span class="line">在 Windows 下，使用 set 代替 export ：</span><br><span class="line"></span><br><span class="line">&gt; set FLASK_APP&#x3D;flaskr</span><br><span class="line">&gt; set FLASK_ENV&#x3D;development</span><br><span class="line">&gt; flask run”</span><br></pre></td></tr></table></figure>
+<h3 id="蓝图"><a href="#蓝图" class="headerlink" title="蓝图"></a>蓝图</h3><p>Blueprint 是一种组织一组相关视图及其他代码的方式。蓝图方式是把视图及其他代码注册到蓝图，然后在工厂函数中把蓝图注册到应用。相当于区分不同prefix前缀的url访问。蓝图可以多次注册</p>
+<p>步骤1：bp = Blueprint(‘auth’, _<em>name_</em>, url_prefix=’/auth’)<br>这里创建了一个名称为 ‘auth’ 的 Blueprint 。和应用对象一样， 蓝图需要知道是在哪里定义的，因此把 <strong>name\</strong> 作为函数的第二个参数。 url_prefix 会添加到所有与该蓝图关联的 URL 前面。</p>
+<p>步骤2：使用 app.register_blueprint() 导入并注册 蓝图。新的代码放在工厂函数的尾部返回应用之前。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">flaskr/__init__.py</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">create_app</span>():</span></span><br><span class="line">    app = ...</span><br><span class="line">    <span class="comment"># existing code omitted</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">from</span> . <span class="keyword">import</span> auth</span><br><span class="line">    app.register_blueprint(auth.bp)</span><br><span class="line">    <span class="keyword">return</span> app</span><br><span class="line">认证蓝图将包括注册新用户、登录和注销视图</span><br></pre></td></tr></table></figure>
+<h4 id="注册蓝图"><a href="#注册蓝图" class="headerlink" title="注册蓝图"></a>注册蓝图</h4><p>可以这样注册蓝图:</p>
+<p>from flask import Flask<br>from yourapplication.simple_page import simple_page</p>
+<p>app = Flask(<strong>name</strong>)<br>app.register_blueprint(simple_page)<br>以下是注册蓝图后形成的规则:</p>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>app.url_map<br>Map([&lt;Rule ‘/static/&lt;filename&gt;’ (HEAD, OPTIONS, GET) -&gt; static&gt;,<br> &lt;Rule ‘/&lt;page&gt;‘ (HEAD, OPTIONS, GET) -&gt; simple_page.show&gt;,<br> &lt;Rule ‘/‘ (HEAD, OPTIONS, GET) -&gt; simple_page.show&gt;])<br>第一条很明显，是来自于应用本身的用于静态文件的。后面两条是用于蓝图 simple_page 的 show 函数的。你可以看到，它们的前缀都是蓝图的名称，并 且使用一个点（ . ）来分隔。</p>
+</blockquote>
+</blockquote>
+</blockquote>
+<p>蓝图还可以挂接到不同的位置:</p>
+<p>app.register_blueprint(simple_page, url_prefix=’/pages’)<br>这样就会形成如下规则:</p>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>app.url_map<br>Map([&lt;Rule ‘/static/&lt;filename&gt;‘ (HEAD, OPTIONS, GET) -&gt; static&gt;,<br> &lt;Rule ‘/pages/&lt;page&gt;‘ (HEAD, OPTIONS, GET) -&gt; simple_page.show&gt;,<br> &lt;Rule ‘/pages/‘ (HEAD, OPTIONS, GET) -&gt; simple_page.show&gt;])<br>总之，你可以多次注册蓝图，但是不一定每个蓝图都能正确响应。是否能够多次注册 实际上取决于你的蓝图是如何编写的，是否能根据不同的位置做出正确的响应。</p>
+</blockquote>
+</blockquote>
+</blockquote>
+<h3 id="验证登录-装饰器"><a href="#验证登录-装饰器" class="headerlink" title="验证登录-装饰器"></a>验证登录-装饰器</h3><p>先看装饰器的例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> datetime</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">log</span>(<span class="params">func</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">wrapper</span>(<span class="params">*args, **kw</span>):</span></span><br><span class="line">        print(<span class="string">&#x27;call %s():&#x27;</span> % func.__name__)</span><br><span class="line">        <span class="keyword">return</span> func(*args, **kw)</span><br><span class="line">    <span class="keyword">return</span> wrapper</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 把@log放到now()函数的定义处，相当于执行了语句：</span></span><br><span class="line"><span class="comment"># now = log(now)</span></span><br><span class="line"><span class="meta">@log</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">now</span>():</span></span><br><span class="line">    print(datetime.datetime.now())</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 本质上，decorator就是一个返回函数的高阶函数。</span></span><br><span class="line"><span class="comment"># 1、需要@语法</span></span><br><span class="line"><span class="comment"># 2、需要运行被装饰函数实现</span></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    f = now</span><br><span class="line">    f()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>需要验证登录的代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">flaskr/auth.py</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">login_required</span>(<span class="params">view</span>):</span></span><br><span class="line"><span class="meta">    @functools.wraps(<span class="params">view</span>)</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">wrapped_view</span>(<span class="params">**kwargs</span>):</span></span><br><span class="line">        <span class="keyword">if</span> g.user <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="keyword">return</span> redirect(url_for(<span class="string">&#x27;auth.login&#x27;</span>))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> view(**kwargs)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> wrapped_view</span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line"><span class="comment"># 可以这样使用 (需要import对应模块) </span></span><br><span class="line"><span class="comment"># view_index = login_required(view_index)</span></span><br><span class="line"><span class="meta">@login_required</span></span><br><span class="line"><span class="meta">@route(<span class="params"><span class="string">&#x27;/index&#x27;</span></span>)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">view_index</span>():</span></span><br><span class="line">  <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+<h3 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h3><h4 id="模板替换"><a href="#模板替换" class="headerlink" title="模板替换"></a>模板替换</h4><figure class="highlight plain"><figcaption><span>extends 'base.html' %&#125;``` 告诉 Jinja 这个模板基于基础模板，并且需要替换 相应的块。所有替换的内容必须位于``` &#123;% block %&#125; ```标签之内。</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">也就是说要替换的内容都放在&#96;&#96;&#96;&#123;% ... %&#125;&#96;&#96;&#96;这里面</span><br><span class="line"></span><br><span class="line">&#96;&#96;&#96;python</span><br><span class="line">flaskr&#x2F;templates&#x2F;auth&#x2F;register.html</span><br><span class="line"></span><br><span class="line"># &#123;% extends &#39;base.html&#39; %&#125; 告诉 Jinja 这个模板基于基础模板，并且需要替换 相应的块。所有替换的内容必须位于 &#123;% block %&#125; 标签之内。</span><br><span class="line"></span><br><span class="line">&#123;% extends &#39;base.html&#39; %&#125;</span><br><span class="line"></span><br><span class="line">&#123;% block header %&#125;</span><br><span class="line">  &lt;h1&gt;&#123;% block title %&#125;Register&#123;% endblock %&#125;&lt;&#x2F;h1&gt;</span><br><span class="line">&#123;% endblock %&#125;</span><br><span class="line"></span><br><span class="line">&#123;% block content %&#125;</span><br><span class="line">  &lt;form method&#x3D;&quot;post&quot;&gt;</span><br><span class="line">    &lt;label for&#x3D;&quot;username&quot;&gt;Username&lt;&#x2F;label&gt;</span><br><span class="line">    &lt;input name&#x3D;&quot;username&quot; id&#x3D;&quot;username&quot; required&gt;</span><br><span class="line">    &lt;label for&#x3D;&quot;password&quot;&gt;Password&lt;&#x2F;label&gt;</span><br><span class="line">    &lt;input type&#x3D;&quot;password&quot; name&#x3D;&quot;password&quot; id&#x3D;&quot;password&quot; required&gt;</span><br><span class="line">    &lt;input type&#x3D;&quot;submit&quot; value&#x3D;&quot;Register&quot;&gt;</span><br><span class="line">  &lt;&#x2F;form&gt;</span><br><span class="line">&#123;% endblock %&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="全局变量"><a href="#全局变量" class="headerlink" title="全局变量"></a>全局变量</h4><p>缺省情况下，以下全局变量可以在 Jinja2 模板中使用：</p>
+<p>config<br>当前配置对象（ flask.config ）<br>request<br>当前请求对象（ flask.request ）。 在没有活动请求环境情况下渲染模板时，这个变量不可用。session<br>当前会话对象（ flask.session ）。 在没有活动请求环境情况下渲染模板时，这个变量不可用。g<br>请求绑定的全局变量（ flask.g ）。 在没有活动请求环境情况下渲染模板时，这个变量不可用。</p>
+<p>url_for()<br>flask.url_for() 函数。</p>
+<p>get_flashed_messages()<br>flask.get_flashed_messages() 函数。</p>
+<h4 id="自动转义"><a href="#自动转义" class="headerlink" title="自动转义"></a>自动转义</h4><p>有三种方法可以控制自动转义：</p>
+<ul>
+<li>在 Python 代码中，可以在把 HTML 字符串传递给模板之前，用 Markup 对象封装。一般情况下推荐使用这个方法。</li>
+<li>在模板中，使用 |safe 过滤器显式把一个字符串标记为安全的 HTML （例如：  ）。</li>
+<li>临时关闭整个系统的自动转义。<br>  在模板中关闭自动转义系统可以使用 <code>&#123;% autoescape %&#125;</code> 块：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;% autoescape false %&#125; </span><br><span class="line"> 		&lt;p&gt;autoescaping is disabled here</span><br><span class="line">    &lt;p&gt;&#123;&#123; will_not_be_escaped &#125;&#125;</span><br><span class="line">&#123;% endautoescape %&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="文件上传"><a href="#文件上传" class="headerlink" title="文件上传"></a>文件上传</h3><p>文件上传的基本原理实际上很简单，基 本上是：一个带有 enctype=multipart/form-data 的 &lt;form&gt; 标记，标记中含有 一个 &lt;input type=file&gt; 。<br>应用通过请求对象的 files 字典来访问文件。<br>使用文件的 save() [<a target="_blank" rel="noopener" href="https://werkzeug.palletsprojects.com/en/0.15.x/datastructures/#werkzeug.datastructures.FileStorage.save]">https://werkzeug.palletsprojects.com/en/0.15.x/datastructures/#werkzeug.datastructures.FileStorage.save]</a> 方法把文件 永久地保存在文件系统中。<br>简介</p>
+<p>让我们从一个基本的应用开始，这个应用上传文件到一个指定目录，并把文件显示给 用户。以下是应用的前导代码:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask, flash, request, redirect, url_for</span><br><span class="line"><span class="keyword">from</span> werkzeug.utils <span class="keyword">import</span> secure_filename</span><br><span class="line"></span><br><span class="line">UPLOAD_FOLDER = <span class="string">&#x27;/path/to/the/uploads&#x27;</span></span><br><span class="line">ALLOWED_EXTENSIONS = &#123;<span class="string">&#x27;txt&#x27;</span>, <span class="string">&#x27;pdf&#x27;</span>, <span class="string">&#x27;png&#x27;</span>, <span class="string">&#x27;jpg&#x27;</span>, <span class="string">&#x27;jpeg&#x27;</span>, <span class="string">&#x27;gif&#x27;</span>&#125;</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line">app.config[<span class="string">&#x27;UPLOAD_FOLDER&#x27;</span>] = UPLOAD_FOLDER</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">allowed_file</span>(<span class="params">filename</span>):</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&#x27;.&#x27;</span> <span class="keyword">in</span> filename <span class="keyword">and</span> \</span><br><span class="line">           filename.rsplit(<span class="string">&#x27;.&#x27;</span>, <span class="number">1</span>)[<span class="number">1</span>].lower() <span class="keyword">in</span> ALLOWED_EXTENSIONS</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route(<span class="params"><span class="string">&#x27;/&#x27;</span>, methods=[<span class="string">&#x27;GET&#x27;</span>, <span class="string">&#x27;POST&#x27;</span>]</span>)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">upload_file</span>():</span></span><br><span class="line">    <span class="keyword">if</span> request.method == <span class="string">&#x27;POST&#x27;</span>:</span><br><span class="line"></span><br><span class="line">        <span class="comment"># check if the post request has the file part</span></span><br><span class="line"></span><br><span class="line">​        <span class="keyword">if</span> <span class="string">&#x27;file&#x27;</span> <span class="keyword">not</span> <span class="keyword">in</span> request.files:</span><br><span class="line">​            flash(<span class="string">&#x27;No file part&#x27;</span>)</span><br><span class="line">​            <span class="keyword">return</span> redirect(request.url)</span><br><span class="line">​        file = request.files[<span class="string">&#x27;file&#x27;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># if user does not select file, browser also</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># submit an empty part without filename</span></span><br><span class="line"></span><br><span class="line">​        <span class="keyword">if</span> file.filename == <span class="string">&#x27;&#x27;</span>:</span><br><span class="line">​            flash(<span class="string">&#x27;No selected file&#x27;</span>)</span><br><span class="line">​            <span class="keyword">return</span> redirect(request.url)</span><br><span class="line">​        <span class="keyword">if</span> file <span class="keyword">and</span> allowed_file(file.filename):</span><br><span class="line">​            filename = secure_filename(file.filename)</span><br><span class="line">​            file.save(os.path.join(app.config[<span class="string">&#x27;UPLOAD_FOLDER&#x27;</span>], filename))</span><br><span class="line">​            <span class="keyword">return</span> redirect(url_for(<span class="string">&#x27;uploaded_file&#x27;</span>,</span><br><span class="line">​                                    filename=filename))</span><br><span class="line">​    <span class="keyword">return</span> <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    &lt;!doctype html&gt;</span></span><br><span class="line"><span class="string">    &lt;title&gt;Upload new File&lt;/title&gt;</span></span><br><span class="line"><span class="string">    &lt;h1&gt;Upload new File&lt;/h1&gt;</span></span><br><span class="line"><span class="string">    &lt;form method=post enctype=multipart/form-data&gt;</span></span><br><span class="line"><span class="string">      &lt;input type=file name=file&gt;</span></span><br><span class="line"><span class="string">      &lt;input type=submit value=Upload&gt;</span></span><br><span class="line"><span class="string">    &lt;/form&gt;</span></span><br><span class="line"><span class="string"></span></span><br></pre></td></tr></table></figure>
+<p>限制文件上传尺寸</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask, Request</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line">app.config[<span class="string">&#x27;MAX_CONTENT_LENGTH&#x27;</span>] = <span class="number">16</span> * <span class="number">1024</span> * <span class="number">1024</span></span><br></pre></td></tr></table></figure>
+<h6 id="推荐扩展：Flask-Uploads实现文件上传"><a href="#推荐扩展：Flask-Uploads实现文件上传" class="headerlink" title="推荐扩展：Flask-Uploads实现文件上传"></a>推荐扩展：Flask-Uploads实现文件上传</h6><h3 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h3><p>Flask 本身不提供缓存，但是 Flask-Caching [<a target="_blank" rel="noopener" href="https://flask-caching.readthedocs.io/en/latest/]">https://flask-caching.readthedocs.io/en/latest/]</a> 扩展可以。 Flask-Caching 支持多种后端，甚至可以支持你自己开发的后端。</p>
+<h3 id="WTForms表单验证"><a href="#WTForms表单验证" class="headerlink" title="WTForms表单验证"></a>WTForms表单验证</h3><h4 id="创建表单"><a href="#创建表单" class="headerlink" title="创建表单"></a>创建表单</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> wtforms <span class="keyword">import</span> Form, BooleanField, StringField, PasswordField, validators</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">RegistrationForm</span>(<span class="params">Form</span>):</span></span><br><span class="line">    username = StringField(<span class="string">&#x27;Username&#x27;</span>, [validators.Length(<span class="built_in">min</span>=<span class="number">4</span>, <span class="built_in">max</span>=<span class="number">25</span>)])</span><br><span class="line">    email = StringField(<span class="string">&#x27;Email Address&#x27;</span>, [validators.Length(<span class="built_in">min</span>=<span class="number">6</span>, <span class="built_in">max</span>=<span class="number">35</span>)])</span><br><span class="line">    password = PasswordField(<span class="string">&#x27;New Password&#x27;</span>, [</span><br><span class="line">        validators.DataRequired(),</span><br><span class="line">        validators.EqualTo(<span class="string">&#x27;confirm&#x27;</span>, message=<span class="string">&#x27;Passwords must match&#x27;</span>)</span><br><span class="line">    ])</span><br><span class="line">    confirm = PasswordField(<span class="string">&#x27;Repeat Password&#x27;</span>)</span><br><span class="line">    accept_tos = BooleanField(<span class="string">&#x27;I accept the TOS&#x27;</span>, [validators.DataRequired()])</span><br></pre></td></tr></table></figure>
+<h4 id="视图"><a href="#视图" class="headerlink" title="视图"></a>视图</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@app.route(<span class="params"><span class="string">&#x27;/register&#x27;</span>, methods=[<span class="string">&#x27;GET&#x27;</span>, <span class="string">&#x27;POST&#x27;</span>]</span>)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">register</span>():</span></span><br><span class="line">    form = RegistrationForm(request.form)</span><br><span class="line">    <span class="keyword">if</span> request.method == <span class="string">&#x27;POST&#x27;</span> <span class="keyword">and</span> form.validate():</span><br><span class="line">        user = User(form.username.data, form.email.data,</span><br><span class="line">                    form.password.data)</span><br><span class="line">        db_session.add(user)</span><br><span class="line">        flash(<span class="string">&#x27;Thanks for registering&#x27;</span>)</span><br><span class="line">        <span class="keyword">return</span> redirect(url_for(<span class="string">&#x27;login&#x27;</span>))</span><br><span class="line">    <span class="keyword">return</span> render_template(<span class="string">&#x27;register.html&#x27;</span>, form=form)</span><br></pre></td></tr></table></figure>
+<h4 id="对应的HTML"><a href="#对应的HTML" class="headerlink" title="对应的HTML"></a>对应的HTML</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"># WTForms 替我们完成了一半表单生成工作。为了做得更好， 我们可以写一个宏，通过这个宏渲染带有一个标签的字段和错误列表（如果有的话）。</span><br><span class="line"></span><br><span class="line"># 以下是一个使用宏的示例 _formhelpers.html 模板：</span><br><span class="line"></span><br><span class="line">&#123;% macro render_field(field) %&#125;</span><br><span class="line">  &lt;dt&gt;&#123;&#123; field.label &#125;&#125;</span><br><span class="line">  &lt;dd&gt;&#123;&#123; field(**kwargs)|safe &#125;&#125;  # WTForms 返回标准的 Python unicode 字符串，因此我们 必须使用 |safe 过滤器告诉 Jinja2 这些数据已经经过 HTML 转义了。</span><br><span class="line">  &#123;% if field.errors %&#125;</span><br><span class="line">    &lt;ul class&#x3D;errors&gt;</span><br><span class="line">    &#123;% for error in field.errors %&#125;</span><br><span class="line">      &lt;li&gt;&#123;&#123; error &#125;&#125;&lt;&#x2F;li&gt;</span><br><span class="line">    &#123;% endfor %&#125;</span><br><span class="line">    &lt;&#x2F;ul&gt;</span><br><span class="line">  &#123;% endif %&#125;</span><br><span class="line">  &lt;&#x2F;dd&gt;</span><br><span class="line">&#123;% endmacro %&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="对应的模板"><a href="#对应的模板" class="headerlink" title="对应的模板"></a>对应的模板</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"> 以下是使用了上面的 _formhelpers.html 的 register.html 模板：</span><br><span class="line"></span><br><span class="line">&#123;% from &quot;_formhelpers.html&quot; import render_field %&#125;</span><br><span class="line">&lt;form method&#x3D;post&gt;</span><br><span class="line">  &lt;dl&gt;</span><br><span class="line">    &#123;&#123; render_field(form.username) &#125;&#125;</span><br><span class="line">    &#123;&#123; render_field(form.email) &#125;&#125;</span><br><span class="line">    &#123;&#123; render_field(form.password) &#125;&#125;</span><br><span class="line">    &#123;&#123; render_field(form.confirm) &#125;&#125;</span><br><span class="line">    &#123;&#123; render_field(form.accept_tos) &#125;&#125;</span><br><span class="line">  &lt;&#x2F;dl&gt;</span><br><span class="line">  &lt;p&gt;&lt;input type&#x3D;submit value&#x3D;Register&gt;</span><br><span class="line">&lt;&#x2F;form&gt;”</span><br></pre></td></tr></table></figure>
+
+
+<p>来源以及参考：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://dormousehole.readthedocs.io/en/latest/">Flask中文文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://pythonhosted.org/Flask-Uploads/">Flask-Uploads文档</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/python/" rel="tag"># python</a>
+              <a href="/tags/Flask/" rel="tag"># Flask</a>
+              <a href="/tags/%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0/" rel="tag"># 文件上传</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/02/20/%E6%B5%85%E8%B0%88Web%E7%BC%96%E7%A8%8B/" rel="prev" title="浅谈Web编程">
+      <i class="fa fa-chevron-left"></i> 浅谈Web编程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/02/23/%E5%B9%B6%E5%8F%91%E6%9D%A1%E4%BB%B6%E4%B8%8B%E5%86%99%E6%B5%8B%E8%AF%95/" rel="next" title="并发条件下写测试">
+      并发条件下写测试 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Flask-uploads%E4%B8%8A%E4%BC%A0%E9%9F%B3%E9%A2%91%E6%96%87%E4%BB%B6"><span class="nav-number">1.</span> <span class="nav-text">Flask-uploads上传音频文件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flask%E6%96%87%E6%A1%A3%E9%83%A8%E5%88%86%E6%91%98%E5%BD%95"><span class="nav-number"></span> <span class="nav-text">Flask文档部分摘录</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E5%BA%94%E7%94%A8-%E5%BC%80%E5%8F%91%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.</span> <span class="nav-text">运行应用-开发模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%93%9D%E5%9B%BE"><span class="nav-number">2.</span> <span class="nav-text">蓝图</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E8%93%9D%E5%9B%BE"><span class="nav-number">2.1.</span> <span class="nav-text">注册蓝图</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E7%99%BB%E5%BD%95-%E8%A3%85%E9%A5%B0%E5%99%A8"><span class="nav-number">3.</span> <span class="nav-text">验证登录-装饰器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E6%9D%BF"><span class="nav-number">4.</span> <span class="nav-text">模板</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E6%9D%BF%E6%9B%BF%E6%8D%A2"><span class="nav-number">4.1.</span> <span class="nav-text">模板替换</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E5%8F%98%E9%87%8F"><span class="nav-number">4.2.</span> <span class="nav-text">全局变量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%87%AA%E5%8A%A8%E8%BD%AC%E4%B9%89"><span class="nav-number">4.3.</span> <span class="nav-text">自动转义</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0"><span class="nav-number">5.</span> <span class="nav-text">文件上传</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E6%8E%A8%E8%8D%90%E6%89%A9%E5%B1%95%EF%BC%9AFlask-Uploads%E5%AE%9E%E7%8E%B0%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0"><span class="nav-number">5.0.0.1.</span> <span class="nav-text">推荐扩展：Flask-Uploads实现文件上传</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%93%E5%AD%98"><span class="nav-number">6.</span> <span class="nav-text">缓存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WTForms%E8%A1%A8%E5%8D%95%E9%AA%8C%E8%AF%81"><span class="nav-number">7.</span> <span class="nav-text">WTForms表单验证</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E8%A1%A8%E5%8D%95"><span class="nav-number">7.1.</span> <span class="nav-text">创建表单</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A7%86%E5%9B%BE"><span class="nav-number">7.2.</span> <span class="nav-text">视图</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9%E5%BA%94%E7%9A%84HTML"><span class="nav-number">7.3.</span> <span class="nav-text">对应的HTML</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9%E5%BA%94%E7%9A%84%E6%A8%A1%E6%9D%BF"><span class="nav-number">7.4.</span> <span class="nav-text">对应的模板</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Feiyu</p>
+  <div class="site-description" itemprop="description">Sit still, my heart, do not raise your dust. Let the world find its way to you.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">60</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Feiyu Zhan</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'rkEqz5mW38LoOGidQFA2EDTL-gzGzoHsz',
+      appKey     : 'u449xmMSu4rkxkrwbBP2Cs64',
+      placeholder: "在快乐和悲伤都写在我们的脸上的那些时代里...",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="理想的笔记需求：  支持markdown，图片自动上传到云存储 多终端同步 方便的搜索 方便的导入导出md格式（这样可以创建脚本根据这些md文档自动更新博客）  目前市面上的产品都或多或少不能全部满足这些需求">
+<meta property="og:type" content="article">
+<meta property="og:title" content="笔记策略和markdown文档图片处理脚本">
+<meta property="og:url" content="http://example.com/2021/02/10/%E7%AC%94%E8%AE%B0%E7%AD%96%E7%95%A5%E5%92%8Cmarkdown%E6%96%87%E6%A1%A3%E5%9B%BE%E7%89%87%E5%A4%84%E7%90%86%E8%84%9A%E6%9C%AC/index.html">
+<meta property="og:site_name" content="fly rain">
+<meta property="og:description" content="理想的笔记需求：  支持markdown，图片自动上传到云存储 多终端同步 方便的搜索 方便的导入导出md格式（这样可以创建脚本根据这些md文档自动更新博客）  目前市面上的产品都或多或少不能全部满足这些需求">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-02-10T04:07:13.000Z">
+<meta property="article:modified_time" content="2021-02-10T05:43:01.509Z">
+<meta property="article:author" content="Feiyu">
+<meta property="article:tag" content="脚本">
+<meta property="article:tag" content="笔记">
+<meta property="article:tag" content="markdown">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2021/02/10/%E7%AC%94%E8%AE%B0%E7%AD%96%E7%95%A5%E5%92%8Cmarkdown%E6%96%87%E6%A1%A3%E5%9B%BE%E7%89%87%E5%A4%84%E7%90%86%E8%84%9A%E6%9C%AC/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>笔记策略和markdown文档图片处理脚本 | fly rain</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">fly rain</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/02/10/%E7%AC%94%E8%AE%B0%E7%AD%96%E7%95%A5%E5%92%8Cmarkdown%E6%96%87%E6%A1%A3%E5%9B%BE%E7%89%87%E5%A4%84%E7%90%86%E8%84%9A%E6%9C%AC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Feiyu">
+      <meta itemprop="description" content="Sit still, my heart, do not raise your dust. Let the world find its way to you.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="fly rain">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          笔记策略和markdown文档图片处理脚本
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2021-02-10 12:07:13 / Modified: 13:43:01" itemprop="dateCreated datePublished" datetime="2021-02-10T12:07:13+08:00">2021-02-10</time>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine: </span>
+    
+    <a title="valine" href="/2021/02/10/%E7%AC%94%E8%AE%B0%E7%AD%96%E7%95%A5%E5%92%8Cmarkdown%E6%96%87%E6%A1%A3%E5%9B%BE%E7%89%87%E5%A4%84%E7%90%86%E8%84%9A%E6%9C%AC/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/02/10/%E7%AC%94%E8%AE%B0%E7%AD%96%E7%95%A5%E5%92%8Cmarkdown%E6%96%87%E6%A1%A3%E5%9B%BE%E7%89%87%E5%A4%84%E7%90%86%E8%84%9A%E6%9C%AC/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>理想的笔记需求：</p>
+<ol>
+<li>支持markdown，图片自动上传到云存储</li>
+<li>多终端同步</li>
+<li>方便的搜索</li>
+<li>方便的导入导出md格式（这样可以创建脚本根据这些md文档自动更新博客）</li>
+</ol>
+<p>目前市面上的产品都或多或少不能全部满足这些需求</p>
+ <a id="more"></a>
+
+<p>目前的解决方式是Typora本地编辑模式和坚果云来进行同步，将图片插入目录设置为同步文件夹下的相对路径，例如./images目录，这样多终端的时候也是可以直接显示的</p>
+<p>这样2和4就解决了，由于hexo中加载云端的图片比较快，所以考虑使用脚本将md文件中引用的图片自动上传，然后替换为cos的地址，至于搜索功能在hexo上可以实现，本地可能暂时还没有好的办法</p>
+<h3 id="图片路径替换脚本"><a href="#图片路径替换脚本" class="headerlink" title="图片路径替换脚本"></a>图片路径替换脚本</h3><p>目标只有两个：</p>
+<ol>
+<li><p>上传md文档中本地的图片：这里依赖不同云存储的SDK，笔者使用的是腾讯云的数据万象，其他的cos也可以类似处理</p>
+</li>
+<li><p>替换文档中图片的路径：这个部分感觉用shell脚本做可能更好，但是为了方便一把梭哈了。事实上替换文件中的某些部分不同于追加append，并不是直接找到文件的末尾，可以通过包括但不限于以下方式实现：</p>
+<ol>
+<li><p>copy当前替换行之前（before part），追加替换后的行，追加替换行之后部分（after part）</p>
+</li>
+<li><p>读每一行，如果当前行是需要替换的行则写替换行，如果不是，则写回当前行</p>
+<p>这里使用的是方法2，这些方式都需要一个临时的缓存文件实现。Attention：这里不要轻易拿源md文件实验，亲历有个bug然后所有文件一秒被写成0字节…</p>
+</li>
+</ol>
+</li>
+</ol>
+<h3 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> qcloud_cos <span class="keyword">import</span> CosConfig</span><br><span class="line"><span class="keyword">from</span> qcloud_cos <span class="keyword">import</span> CosS3Client</span><br><span class="line"><span class="keyword">from</span> qcloud_cos <span class="keyword">import</span> CosServiceError</span><br><span class="line"><span class="keyword">from</span> qcloud_cos <span class="keyword">import</span> CosClientError</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> logging</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> threading</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">扫描使用Typora的markdown文档下的本地图片，上传到腾讯云cos并替换markdown中路径为腾讯云中的路径</span></span><br><span class="line"><span class="string">扫描目标：</span></span><br><span class="line"><span class="string"> 1、md插入图片格式： &#x27; ![&#x27;, </span></span><br><span class="line"><span class="string"> 2、缩放过的图片插入格式： &#x27;&lt;img src=&quot; &#x27;</span></span><br><span class="line"><span class="string"> 两种类型(后面用于图片缩放过的)，绝对路径和相对路径都是可以的，对于已经是网络路径的图片不会进行替换</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Attention：</span></span><br><span class="line"><span class="string">    需要关闭Typora全局图像设置：&#x27;插入时自动转义图片URL选项&#x27;</span></span><br><span class="line"><span class="string">    使用前请备份！！！</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">cos_path = <span class="string">&#x27;https://xxxx-xxxxxx.xxxxx.myqcloud.com/&#x27;</span>  <span class="comment"># 需要配置：腾讯云cos的bucket存储桶的url</span></span><br><span class="line">cos_folder = <span class="string">&#x27;mac_md/&#x27;</span>  <span class="comment"># 需要配置：上传到腾讯云cos的文件夹名</span></span><br><span class="line">source_path = <span class="string">&#x27;/Users/yufei/Desktop/mac_md/&#x27;</span>  <span class="comment"># 需要配置：本地需要扫描的markdown文档目录需要以&#x27;/&#x27;结尾，例如：/Users/yufei/Desktop/test/</span></span><br><span class="line">secret_id = <span class="string">&#x27;XXXXXXXXXXXXXXXXXXXXXXXXXXXX&#x27;</span>  <span class="comment"># 需要配置：腾讯云cos的secret_id</span></span><br><span class="line">secret_key = <span class="string">&#x27;XXXXXXXXXXXXXXXXXXXXXXXXXXXXX&#x27;</span>  <span class="comment"># 需要配置：腾讯云cos的secret_key</span></span><br><span class="line">region = <span class="string">&#x27;ap-shanghai&#x27;</span>  <span class="comment"># 需要配置：腾讯云cos的region</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 替换文档中图片的路径,这部分不可以并发，并非追加append模式</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">modify_file</span>(<span class="params">filename, text_to_search, replacement_text, water_mark=<span class="string">&#x27;&#x27;</span></span>):</span></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(filename, <span class="string">&#x27;r&#x27;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> file:</span><br><span class="line">        filedata = file.read()</span><br><span class="line">    filedata = filedata.replace(text_to_search, replacement_text+water_mark)</span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(filename, <span class="string">&#x27;w&#x27;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> file:</span><br><span class="line">        file.write(filedata)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 扫描md文档中的image，上传本地文件(if exists)，替换原图片路径为云路径</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">image_replace</span>(<span class="params">hexo_posts_path, replace_regular_header=[<span class="string">&#x27;![&#x27;</span>, <span class="string">&#x27;&lt;img src=&quot;&#x27;</span>]</span>):</span></span><br><span class="line">    files = os.listdir(hexo_posts_path)</span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> files:</span><br><span class="line">        modify_dict = &#123;&#125;</span><br><span class="line">        <span class="keyword">if</span> os.path.isdir(hexo_posts_path+file):</span><br><span class="line">            image_replace(hexo_posts_path+file+<span class="string">&#x27;/&#x27;</span>)</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> file.endswith(<span class="string">&quot;.md&quot;</span>):</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        <span class="keyword">with</span> <span class="built_in">open</span>(hexo_posts_path+file, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">            lines = f.readlines()</span><br><span class="line">            <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">                local_image_path = <span class="string">&quot;&quot;</span></span><br><span class="line">                <span class="keyword">if</span> <span class="string">&quot;http&quot;</span> <span class="keyword">in</span> local_image_path:  <span class="comment"># 不替换网页图片引用</span></span><br><span class="line">                    <span class="keyword">continue</span></span><br><span class="line">                <span class="keyword">if</span> replace_regular_header[<span class="number">0</span>] <span class="keyword">not</span> <span class="keyword">in</span> line <span class="keyword">and</span> replace_regular_header[<span class="number">1</span>] <span class="keyword">not</span> <span class="keyword">in</span> line:</span><br><span class="line">                    <span class="keyword">continue</span></span><br><span class="line">                <span class="keyword">if</span> replace_regular_header[<span class="number">0</span>] <span class="keyword">in</span> line:</span><br><span class="line">                    <span class="keyword">if</span> <span class="string">&#x27;]&#x27;</span> <span class="keyword">in</span> line <span class="keyword">and</span> <span class="string">&#x27;(&#x27;</span> <span class="keyword">in</span> line <span class="keyword">and</span> <span class="string">&#x27;)&#x27;</span> <span class="keyword">in</span> line:</span><br><span class="line">                        start_index = line.find(<span class="string">&#x27;(&#x27;</span>, line.find(replace_regular_header[<span class="number">0</span>]))</span><br><span class="line">                        end_index = line.find(<span class="string">&#x27;)&#x27;</span>, start_index+<span class="number">1</span>)</span><br><span class="line">                        local_image_path = line[start_index+<span class="number">1</span>: end_index]</span><br><span class="line">                    <span class="keyword">else</span>:</span><br><span class="line">                        <span class="keyword">continue</span></span><br><span class="line">                <span class="keyword">elif</span> replace_regular_header[<span class="number">1</span>] <span class="keyword">in</span> line:</span><br><span class="line">                    start_index = line.find(replace_regular_header[<span class="number">1</span>]) + <span class="built_in">len</span>(replace_regular_header[<span class="number">1</span>])</span><br><span class="line">                    end_index = line.find(<span class="string">&#x27;&quot;&#x27;</span>, start_index+<span class="number">1</span>)</span><br><span class="line">                    local_image_path = line[start_index: end_index]</span><br><span class="line">                image_name = local_image_path.split(<span class="string">&#x27;/&#x27;</span>)[-<span class="number">1</span>]</span><br><span class="line">                modify_dict[local_image_path] = cos_path + cos_folder + image_name</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> local_image_path.startswith(<span class="string">&#x27;.&#x27;</span>):  <span class="comment"># 处理相对路径</span></span><br><span class="line">                    local_image_path = local_image_path[<span class="number">2</span>:]</span><br><span class="line">                    t = threading.Thread(target=image_upload, args=(hexo_posts_path+file, hexo_posts_path+local_image_path, image_name))</span><br><span class="line">                    t.start()</span><br><span class="line">                <span class="keyword">else</span>:</span><br><span class="line">                    t = threading.Thread(target=image_upload, args=(hexo_posts_path+file, local_image_path, image_name))</span><br><span class="line">                    t.start()</span><br><span class="line">        <span class="keyword">for</span> key <span class="keyword">in</span> modify_dict:</span><br><span class="line">            modify_file(hexo_posts_path+file, key, modify_dict[key])</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">image_upload</span>(<span class="params">md_file_name, file_path, file_name, rename_folder=cos_folder</span>):</span></span><br><span class="line">    logging.basicConfig(level=logging.INFO, stream=sys.stdout)</span><br><span class="line">    token = <span class="literal">None</span>  <span class="comment"># 使用临时密钥需要传入Token，默认为空,可不填</span></span><br><span class="line">    config = CosConfig(Region=region, SecretId=secret_id, SecretKey=secret_key, Token=token)  <span class="comment"># 获取配置对象</span></span><br><span class="line">    client = CosS3Client(config)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 文件流 简单上传</span></span><br><span class="line">    finish = <span class="literal">True</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">with</span> <span class="built_in">open</span>(file_path, <span class="string">&#x27;rb&#x27;</span>) <span class="keyword">as</span> fp:</span><br><span class="line">            response = client.put_object(</span><br><span class="line">                Bucket=<span class="string">&#x27;feiyu-xxxxxxxxxxx&#x27;</span>,  <span class="comment"># Bucket由bucketname-appid组成</span></span><br><span class="line">                Body=fp,</span><br><span class="line">                Key=rename_folder+file_name,</span><br><span class="line">                StorageClass=<span class="string">&#x27;STANDARD&#x27;</span>,</span><br><span class="line">                EnableMD5=<span class="literal">False</span></span><br><span class="line">            )</span><br><span class="line">    <span class="keyword">except</span> FileNotFoundError <span class="keyword">as</span> e:</span><br><span class="line">        finish = <span class="literal">False</span></span><br><span class="line">        print(e)</span><br><span class="line">    <span class="keyword">if</span> finish:</span><br><span class="line">        print(md_file_name + <span class="string">&quot; =====&gt; done!&quot;</span> + <span class="string">&quot;\n          &quot;</span> + file_path + <span class="string">&quot; &quot;</span> + file_name)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        print(md_file_name + <span class="string">&quot; =====&gt; fail!&quot;</span> + <span class="string">&quot;\n          &quot;</span> + file_path + <span class="string">&quot; &quot;</span> + file_name)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    image_replace(source_path)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="注"><a href="#注" class="headerlink" title="注"></a>注</h3><p>这个脚本是实验性的，在本地电脑运行处理了之前写的部分md文档，效果总体来说还行，但是还有很大的优化空间</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%84%9A%E6%9C%AC/" rel="tag"># 脚本</a>
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+              <a href="/tags/markdown/" rel="tag"># markdown</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/01/28/union%E7%9A%84%E5%86%85%E5%AD%98%E6%8E%92%E5%88%97/" rel="prev" title="union的内存排列">
+      <i class="fa fa-chevron-left"></i> union的内存排列
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/02/16/TCP%E8%BF%9E%E6%8E%A5%E4%B8%8E%E9%98%BB%E5%A1%9EIO%E6%A8%A1%E5%9E%8B/" rel="next" title="TCP连接与阻塞IO模型">
+      TCP连接与阻塞IO模型 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E7%89%87%E8%B7%AF%E5%BE%84%E6%9B%BF%E6%8D%A2%E8%84%9A%E6%9C%AC"><span class="nav-number">1.</span> <span class="nav-text">图片路径替换脚本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81"><span class="nav-number">2.</span> <span class="nav-text">代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8"><span class="nav-number">3.</span> <span class="nav-text">注</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Feiyu</p>
+  <div class="site-description" itemprop="description">Sit still, my heart, do not raise your dust. Let the world find its way to you.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">60</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Feiyu Zhan</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'rkEqz5mW38LoOGidQFA2EDTL-gzGzoHsz',
+      appKey     : 'u449xmMSu4rkxkrwbBP2Cs64',
+      placeholder: "在快乐和悲伤都写在我们的脸上的那些时代里...",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

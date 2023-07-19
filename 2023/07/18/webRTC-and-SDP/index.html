@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="SDP(Session Description Protocol)用于描述multimedia的会话协商，可以让通话的双方交换一些必要的信息(codec, port等),SDP详见 https:&#x2F;&#x2F;datatracker.ietf.org&#x2F;doc&#x2F;html&#x2F;rfc8866#name-sdp-specification">
+<meta property="og:type" content="article">
+<meta property="og:title" content="webRTC and SDP">
+<meta property="og:url" content="http://example.com/2023/07/18/webRTC-and-SDP/index.html">
+<meta property="og:site_name" content="fly rain">
+<meta property="og:description" content="SDP(Session Description Protocol)用于描述multimedia的会话协商，可以让通话的双方交换一些必要的信息(codec, port等),SDP详见 https:&#x2F;&#x2F;datatracker.ietf.org&#x2F;doc&#x2F;html&#x2F;rfc8866#name-sdp-specification">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-07-18T08:21:48.000Z">
+<meta property="article:modified_time" content="2023-07-18T11:59:09.024Z">
+<meta property="article:author" content="Feiyu">
+<meta property="article:tag" content="c++">
+<meta property="article:tag" content="webRTC">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2023/07/18/webRTC-and-SDP/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>webRTC and SDP | fly rain</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">fly rain</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/07/18/webRTC-and-SDP/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Feiyu">
+      <meta itemprop="description" content="Sit still, my heart, do not raise your dust. Let the world find its way to you.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="fly rain">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          webRTC and SDP
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2023-07-18 16:21:48 / Modified: 19:59:09" itemprop="dateCreated datePublished" datetime="2023-07-18T16:21:48+08:00">2023-07-18</time>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine: </span>
+    
+    <a title="valine" href="/2023/07/18/webRTC-and-SDP/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2023/07/18/webRTC-and-SDP/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>SDP(Session Description Protocol)用于描述multimedia的会话协商，可以让通话的双方交换一些必要的信息(codec, port等),SDP详见 <a target="_blank" rel="noopener" href="https://datatracker.ietf.org/doc/html/rfc8866#name-sdp-specification">https://datatracker.ietf.org/doc/html/rfc8866#name-sdp-specification</a> </p>
+ <a id="more"></a>
+
+<p>WebRTC在建立连接时有以下步骤:</p>
+<ul>
+<li>发起方createOffer</li>
+<li>发起方setLocalDescription</li>
+<li>发起方发送offer</li>
+<li>接收方setRemoteDescription</li>
+<li>接收方createAnswer</li>
+<li>接收方setLocalDescription</li>
+<li>接收方发送Answer</li>
+</ul>
+<ol>
+<li>example offer from <a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc4317.txt">https://www.rfc-editor.org/rfc/rfc4317.txt</a></li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line">v=<span class="number">0</span> </span><br><span class="line">o=- <span class="number">487255629242026503</span> <span class="number">2</span> IN IP4 <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span> </span><br><span class="line">s=- </span><br><span class="line">t=<span class="number">0</span> <span class="number">0</span> </span><br><span class="line"><span class="comment">// use same port for audio video</span></span><br><span class="line">a=group:BUNDLE audio video </span><br><span class="line">a=msid-semantic: WMS <span class="number">6</span>x9ZxQZqpo19FRr3Q0xsWC2JJ1lVsk2JE0sG </span><br><span class="line"><span class="comment">// audio m line</span></span><br><span class="line"><span class="comment">// use port 9 for audio, use RTP, format is 111(see a=rtpmap:111 opus/48000/2 below)</span></span><br><span class="line">m=audio <span class="number">9</span> RTP/SAVPF <span class="number">111</span> <span class="number">103</span> <span class="number">104</span> <span class="number">9</span> <span class="number">0</span> <span class="number">8</span> <span class="number">106</span> <span class="number">105</span> <span class="number">13</span> <span class="number">126</span> </span><br><span class="line">c=IN IP4 <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span></span><br><span class="line">a=rtcp:<span class="number">9</span> IN IP4 <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span> </span><br><span class="line">a=ice-ufrag:<span class="number">8</span>a1/LJqQMzBmYtes </span><br><span class="line">a=ice-pwd:sbfskHYHACygyHW1wVi8GZM+ </span><br><span class="line">a=ice-options:google-ice </span><br><span class="line">a=fingerprint:sha<span class="number">-256</span> <span class="number">28</span>:<span class="number">4</span>C:<span class="number">19</span>:<span class="number">10</span>:<span class="number">97</span>:<span class="number">56</span>:FB:<span class="number">22</span>:<span class="number">57</span>:<span class="number">9</span>E:<span class="number">5</span>A:<span class="number">88</span>:<span class="number">28</span>:F3:<span class="number">04</span>:</span><br><span class="line">   DF:<span class="number">37</span>:D0:<span class="number">7</span>D:<span class="number">55</span>:C3:D1:<span class="number">59</span>:B0:B2:<span class="number">81</span> :FB:<span class="number">9</span>D:DF:CB:<span class="number">15</span>:A8 </span><br><span class="line">a=setup:actpass </span><br><span class="line">a=mid:audio </span><br><span class="line"><span class="comment">// rtp extension, audio level can be used to check if attendee is speaking</span></span><br><span class="line">a=extmap:<span class="number">1</span> urn:ietf:params:rtp-hdrext:ssrc-audio-level </span><br><span class="line"><span class="comment">// abs-send-time for delay calculate</span></span><br><span class="line">a=extmap:<span class="number">3</span> http:<span class="comment">//www.webrtc.org/experiments/rtp-hdrext/abs-send-time </span></span><br><span class="line"><span class="comment">// sendonly/recvonly/sendrecv</span></span><br><span class="line">a=sendrecv </span><br><span class="line"><span class="comment">// same port for rtp and rtcp</span></span><br><span class="line">a=rtcp-mux </span><br><span class="line"><span class="comment">// playload type 111, opus, sampling rate, channel number </span></span><br><span class="line">a=rtpmap:<span class="number">111</span> opus/<span class="number">48000</span>/<span class="number">2</span> </span><br><span class="line"><span class="comment">// more details of opus codec(like useinbandfec)</span></span><br><span class="line">a=fmtp:<span class="number">111</span> minptime=<span class="number">10</span> </span><br><span class="line">a=rtpmap:<span class="number">103</span> ISAC/<span class="number">16000</span> </span><br><span class="line">a=rtpmap:<span class="number">104</span> ISAC/<span class="number">32000</span> </span><br><span class="line">a=rtpmap:<span class="number">9</span> G722/<span class="number">8000</span> </span><br><span class="line">a=rtpmap:<span class="number">0</span> PCMU/<span class="number">8000</span> </span><br><span class="line">a=rtpmap:<span class="number">8</span> PCMA/<span class="number">8000</span> </span><br><span class="line">a=rtpmap:<span class="number">106</span> CN/<span class="number">32000</span> </span><br><span class="line">a=rtpmap:<span class="number">105</span> CN/<span class="number">16000</span> </span><br><span class="line">a=rtpmap:<span class="number">13</span> CN/<span class="number">8000</span> </span><br><span class="line">a=rtpmap:<span class="number">126</span> telephone-event/<span class="number">8000</span> </span><br><span class="line">a=maxptime:<span class="number">60</span> </span><br><span class="line">a=ssrc:<span class="number">3607952327</span> cname:v1SBHP7c76XqYcWx </span><br><span class="line">a=ssrc:<span class="number">3607952327</span> msid:<span class="number">6</span>x9ZxQZqpo19FRr3Q0xsWC2JJ1lVsk2JE0sG <span class="number">9</span>eb1f6d5-c3b246fe</span><br><span class="line">   -b46b<span class="number">-63</span>ea11c46c74 </span><br><span class="line">a=ssrc:<span class="number">3607952327</span> mslabel:<span class="number">6</span>x9ZxQZqpo19FRr3Q0xsWC2JJ1lVsk2JE0sG </span><br><span class="line">a=ssrc:<span class="number">3607952327</span> label:<span class="number">9</span>eb1f6d5-c3b2<span class="number">-46f</span>e-b46b<span class="number">-63</span>ea11c46c74</span><br><span class="line"></span><br><span class="line"><span class="comment">// video m line</span></span><br><span class="line">m=video <span class="number">9</span> RTP/SAVPF <span class="number">100</span> <span class="number">116</span> <span class="number">117</span> <span class="number">96</span> </span><br><span class="line">c=IN IP4 <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span> </span><br><span class="line">a=rtcp:<span class="number">9</span> IN IP4 <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span> </span><br><span class="line">a=ice-ufrag:<span class="number">8</span>a1/LJqQMzBmYtes</span><br><span class="line">a=ice-pwd:sbfskHYHACygyHW1wVi8GZM+ </span><br><span class="line">a=ice-options:google-ice </span><br><span class="line">a=fingerprint:sha<span class="number">-256</span> <span class="number">28</span>:<span class="number">4</span>C:<span class="number">19</span>:<span class="number">10</span>:<span class="number">97</span>:<span class="number">56</span>:FB:<span class="number">22</span>:<span class="number">57</span>:<span class="number">9</span>E:<span class="number">5</span>A:<span class="number">88</span>:<span class="number">28</span>:F3:<span class="number">04</span>:</span><br><span class="line">   DF:<span class="number">37</span>:D0:<span class="number">7</span>D:<span class="number">55</span>:C3:D1:<span class="number">59</span>:B0:B2:<span class="number">81</span> :FB:<span class="number">9</span>D:DF:CB:<span class="number">15</span>:A8 </span><br><span class="line">a=setup:actpass </span><br><span class="line">a=mid:video </span><br><span class="line">a=extmap:<span class="number">2</span> urn:ietf:params:rtp-hdrext:toffset </span><br><span class="line">a=extmap:<span class="number">3</span> http:<span class="comment">//www.webrtc.org/experiments/rtp-hdrext/abs-send-time</span></span><br><span class="line">a=sendrecv </span><br><span class="line">a=rtcp-mux </span><br><span class="line">a=rtpmap:<span class="number">100</span> VP8/<span class="number">90000</span> </span><br><span class="line">a=rtcp-fb:<span class="number">100</span> ccm fir </span><br><span class="line">a=rtcp-fb:<span class="number">100</span> nack </span><br><span class="line">a=rtcp-fb:<span class="number">100</span> nack pli </span><br><span class="line">a=rtcp-fb:<span class="number">100</span> goog-remb </span><br><span class="line">a=rtpmap:<span class="number">116</span> red/<span class="number">90000</span> </span><br><span class="line">a=rtpmap:<span class="number">117</span> ulpfec/<span class="number">90000</span> </span><br><span class="line">a=rtpmap:<span class="number">96</span> rtx/<span class="number">90000</span> </span><br><span class="line">a=fmtp:<span class="number">96</span> apt=<span class="number">100</span> </span><br><span class="line">a=ssrc-group:FID <span class="number">1175220440</span> <span class="number">3592114481</span> </span><br><span class="line">a=ssrc:<span class="number">1175220440</span> cname:v1SBHP7c76XqYcWx </span><br><span class="line">a=ssrc:<span class="number">1175220440</span> msid:<span class="number">6</span>x9ZxQZqpo19FRr3Q0xsWC2JJ1lVsk2JE0sG</span><br><span class="line">   <span class="number">43</span>d2eec3<span class="number">-7116</span><span class="number">-4b</span>29-ad33<span class="number">-466</span>c9358bfb3 </span><br><span class="line">a=ssrc:<span class="number">1175220440</span> mslabel:<span class="number">6</span>x9ZxQZqpo19FRr3Q0xsWC2JJ1lVsk2JE0sG </span><br><span class="line">a=ssrc:<span class="number">1175220440</span> label:<span class="number">43</span>d2eec3<span class="number">-7116</span><span class="number">-4b</span>29-ad33<span class="number">-466</span>c9358bfb3 </span><br><span class="line">a=ssrc:<span class="number">3592114481</span> cname:v1SBHP7c76XqYcWx </span><br><span class="line">a=ssrc:<span class="number">3592114481</span> msid:<span class="number">6</span>x9ZxQZqpo19FRr3Q0xsWC2JJ1lVsk2JE0sG</span><br><span class="line">   <span class="number">43</span>d2eec3<span class="number">-7116</span><span class="number">-4b</span>29-ad33<span class="number">-466</span>c9358bfb3 </span><br><span class="line">a=ssrc:<span class="number">3592114481</span> mslabel:<span class="number">6</span>x9ZxQZqpo19FRr3Q0xsWC2JJ1lVsk2JE0sG </span><br><span class="line">a=ssrc:<span class="number">3592114481</span> label:<span class="number">43</span>d2eec3<span class="number">-7116</span><span class="number">-4b</span>29-ad33<span class="number">-466</span>c9358bfb3</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>example answer</li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line">v=<span class="number">0</span> </span><br><span class="line">o=- <span class="number">5504016820010393753</span> <span class="number">2</span> IN IP4 <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span> </span><br><span class="line">s=- </span><br><span class="line">t=<span class="number">0</span> <span class="number">0</span> </span><br><span class="line">a=group:BUNDLE audio video </span><br><span class="line">a=msid-semantic: WMS </span><br><span class="line">m=audio <span class="number">9</span> RTP/SAVPF <span class="number">111</span> <span class="number">103</span> <span class="number">104</span> <span class="number">9</span> <span class="number">0</span> <span class="number">8</span> <span class="number">106</span> <span class="number">105</span> <span class="number">13</span> <span class="number">126</span> </span><br><span class="line">c=IN IP4 <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span> </span><br><span class="line">a=rtcp:<span class="number">9</span> IN IP4 <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span> </span><br><span class="line">a=ice-ufrag:RjDpYl08FRKBqZ4A </span><br><span class="line">a=ice-pwd:wSgwewyvypHhyxrcZELBLOBO </span><br><span class="line">a=fingerprint:sha<span class="number">-256</span> <span class="number">28</span>:<span class="number">4</span>C:<span class="number">19</span>:<span class="number">10</span>:<span class="number">97</span>:<span class="number">56</span>:FB:<span class="number">22</span>:<span class="number">57</span>:<span class="number">9</span>E:<span class="number">5</span>A:<span class="number">88</span>:<span class="number">28</span>:</span><br><span class="line">   F3:<span class="number">04</span>:DF:<span class="number">37</span>:D0:<span class="number">7</span>D:<span class="number">55</span>:C3:D1:<span class="number">59</span>:B0:B2:<span class="number">81</span> :FB:<span class="number">9</span>D:DF:CB:<span class="number">15</span>:A8 </span><br><span class="line">a=setup:active </span><br><span class="line">a=mid:audio </span><br><span class="line">a=extmap:<span class="number">1</span> urn:ietf:params:rtp-hdrext:ssrc-audio-level </span><br><span class="line">a=extmap:<span class="number">3</span> http:<span class="comment">//www.webrtc.org/experiments/rtp-hdrext/abs-send-time </span></span><br><span class="line">a=recvonly </span><br><span class="line">a=rtcp-mux </span><br><span class="line">a=rtpmap:<span class="number">111</span> opus/<span class="number">48000</span>/<span class="number">2</span> </span><br><span class="line">a=fmtp:<span class="number">111</span> minptime=<span class="number">10</span> </span><br><span class="line">a=rtpmap:<span class="number">103</span> ISAC/<span class="number">16000</span> </span><br><span class="line">a=rtpmap:<span class="number">104</span> ISAC/<span class="number">32000</span> </span><br><span class="line">a=rtpmap:<span class="number">9</span> G722/<span class="number">8000</span> </span><br><span class="line">a=rtpmap:<span class="number">0</span> PCMU/<span class="number">8000</span> </span><br><span class="line">a=rtpmap:<span class="number">8</span> PCMA/<span class="number">8000</span> </span><br><span class="line">a=rtpmap:<span class="number">106</span> CN/<span class="number">32000</span> </span><br><span class="line">a=rtpmap:<span class="number">105</span> CN/<span class="number">16000</span> </span><br><span class="line">a=rtpmap:<span class="number">13</span> CN/<span class="number">8000</span> </span><br><span class="line">a=rtpmap:<span class="number">126</span> telephone-event/<span class="number">8000</span> </span><br><span class="line">a=maxptime:<span class="number">60</span> </span><br><span class="line"></span><br><span class="line">m=video <span class="number">9</span> RTP/SAVPF <span class="number">100</span> <span class="number">116</span> <span class="number">117</span> <span class="number">96</span></span><br><span class="line">c=IN IP4 <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span> </span><br><span class="line">a=rtcp:<span class="number">9</span> IN IP4 <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span> </span><br><span class="line">a=ice-ufrag:RjDpYl08FRKBqZ4A </span><br><span class="line">a=ice-pwd:wSgwewyvypHhyxrcZELBLOBO </span><br><span class="line">a=fingerprint:sha<span class="number">-256</span> <span class="number">28</span>:<span class="number">4</span>C:<span class="number">19</span>:<span class="number">10</span>:<span class="number">97</span>:<span class="number">56</span>:FB:<span class="number">22</span>:<span class="number">57</span>:<span class="number">9</span>E:<span class="number">5</span>A:<span class="number">88</span>:<span class="number">28</span>:</span><br><span class="line">   F3:<span class="number">04</span>:DF:<span class="number">37</span>:D0:<span class="number">7</span>D:<span class="number">55</span>:C3:D1:<span class="number">59</span>:B0:B2:<span class="number">81</span> :FB:<span class="number">9</span>D:DF:CB:<span class="number">15</span>:A8 </span><br><span class="line">a=setup:active </span><br><span class="line">a=mid:video </span><br><span class="line">a=extmap:<span class="number">2</span> urn:ietf:params:rtp-hdrext:toffset </span><br><span class="line">a=extmap:<span class="number">3</span> http:<span class="comment">//www.webrtc.org/experiments/rtp-hdrext/abs-send-time</span></span><br><span class="line">a=recvonly </span><br><span class="line">a=rtcp-mux </span><br><span class="line">a=rtpmap:<span class="number">100</span> VP8/<span class="number">90000</span> </span><br><span class="line">a=rtcp-fb:<span class="number">100</span> ccm fir </span><br><span class="line">a=rtcp-fb:<span class="number">100</span> nack </span><br><span class="line">a=rtcp-fb:<span class="number">100</span> nack pli </span><br><span class="line">a=rtcp-fb:<span class="number">100</span> goog-remb </span><br><span class="line">a=rtpmap:<span class="number">116</span> red/<span class="number">90000</span> </span><br><span class="line">a=rtpmap:<span class="number">117</span> ulpfec/<span class="number">90000</span> </span><br><span class="line">a=rtpmap:<span class="number">96</span> rtx/<span class="number">90000</span> </span><br><span class="line">a=fmtp:<span class="number">96</span> apt=<span class="number">100</span></span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/c/" rel="tag"># c++</a>
+              <a href="/tags/webRTC/" rel="tag"># webRTC</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/07/18/switch%E4%B8%8Eifelse/" rel="prev" title="switch与ifelse">
+      <i class="fa fa-chevron-left"></i> switch与ifelse
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/07/19/Aboout-c-11/" rel="next" title="Aboout c++11">
+      Aboout c++11 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Feiyu</p>
+  <div class="site-description" itemprop="description">Sit still, my heart, do not raise your dust. Let the world find its way to you.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">60</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Feiyu Zhan</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'rkEqz5mW38LoOGidQFA2EDTL-gzGzoHsz',
+      appKey     : 'u449xmMSu4rkxkrwbBP2Cs64',
+      placeholder: "在快乐和悲伤都写在我们的脸上的那些时代里...",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Spring已经成为Java的另一个名字">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring AOP &amp; IOC">
+<meta property="og:url" content="http://example.com/2021/01/12/Spring-AOP-IOC/index.html">
+<meta property="og:site_name" content="fly rain">
+<meta property="og:description" content="Spring已经成为Java的另一个名字">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/%E5%8D%9A%E5%AE%A2%E9%BB%98%E8%AE%A4/AOP_1589612782417.jpg">
+<meta property="og:image" content="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/%E5%8D%9A%E5%AE%A2%E9%BB%98%E8%AE%A4/IOC.jpg">
+<meta property="article:published_time" content="2021-01-12T15:19:20.000Z">
+<meta property="article:modified_time" content="2021-02-10T03:54:59.318Z">
+<meta property="article:author" content="Feiyu">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="Spring">
+<meta property="article:tag" content="AOP">
+<meta property="article:tag" content="IOC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/%E5%8D%9A%E5%AE%A2%E9%BB%98%E8%AE%A4/AOP_1589612782417.jpg">
+
+<link rel="canonical" href="http://example.com/2021/01/12/Spring-AOP-IOC/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>Spring AOP & IOC | fly rain</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">fly rain</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/01/12/Spring-AOP-IOC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Feiyu">
+      <meta itemprop="description" content="Sit still, my heart, do not raise your dust. Let the world find its way to you.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="fly rain">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spring AOP & IOC
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-01-12 23:19:20" itemprop="dateCreated datePublished" datetime="2021-01-12T23:19:20+08:00">2021-01-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-02-10 11:54:59" itemprop="dateModified" datetime="2021-02-10T11:54:59+08:00">2021-02-10</time>
+              </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine: </span>
+    
+    <a title="valine" href="/2021/01/12/Spring-AOP-IOC/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/01/12/Spring-AOP-IOC/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Spring已经成为Java的另一个名字</p>
+ <a id="more"></a>
+
+<h3 id="Spring-AOP与代理"><a href="#Spring-AOP与代理" class="headerlink" title="Spring-AOP与代理"></a>Spring-AOP与代理</h3><h3 id="静态代理"><a href="#静态代理" class="headerlink" title="静态代理"></a>静态代理</h3><p>静态代理可以分成两个部分，第一个部分是实现代理的本质需求，找中介买房的话那么卖房就是这个本质需求，在这里中介和房东必须都有卖房这个方法才能代理，也就是说中介和房东都需要实现saleHouse()的接口，只不过中介.saleHouse()的内部是实际的房东.saleHouse().静态代理的第二个部分是在不修改源代码的基础上可扩展，中介可以有自己的方法，在代理类中实现即可，无需改动原房东的部分。<br>可以看出其实静态代理的实质就是新增了一个类，核心需求是调用原实体类的方法，其他部分可以自定义，在不改动的基础上进行扩展，但是它的劣势也就是一个实体类需要一个代理类，代码量double</p>
+<h3 id="动态代理"><a href="#动态代理" class="headerlink" title="动态代理"></a>动态代理</h3><p>动态代理 = 静态代理 + 反射，同一个接口的实现类，可以通过反射找到它的class和method，JDK中使用Interface InvocationHandler和Class Proxy实现动态代理。<br>InvocationHandler这个接口中只有一个方法，invoke(Object proxy, 方法 method, Object[] args)，这个方法用于处理代理实例上的方法并返回结果， Proxy类可以生成代理对象如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Foo f &#x3D; (Foo) Proxy.newProxyInstance(Foo.class.getClassLoader(),</span><br><span class="line">                                          new Class&lt;?&gt;[] &#123; Foo.class &#125;,</span><br><span class="line">                                          handler); </span><br></pre></td></tr></table></figure>
+<h3 id="example"><a href="#example" class="headerlink" title="example"></a>example</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.lang.reflect.InvocationHandler;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Proxy;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> zfeiyu</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@date</span> 2020/5/16</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ProxyInvocationHandler</span> <span class="keyword">implements</span> <span class="title">InvocationHandler</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//被代理类对象</span></span><br><span class="line">    <span class="keyword">private</span> Object target;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setTarget</span><span class="params">(Object target)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.target = target;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">getProxy</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> Proxy.newProxyInstance(<span class="keyword">this</span>.getClass().getClassLoader(), </span><br><span class="line">                target.getClass().getInterfaces(), <span class="keyword">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object o, Method method, Object[] objects)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        doBeforeInvoke();</span><br><span class="line">        Object ret = method.invoke(target, objects);</span><br><span class="line">        doAfterInvoke();</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doBeforeInvoke</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doAfterInvoke</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="AOP"><a href="#AOP" class="headerlink" title="AOP"></a>AOP</h3><p>在面向对象的过程中考虑的最小模块是类，而在AOP面向切面编程的过程中考虑的是模块，它旨在提供另一种编程的思路，AOP用于Spring的声明式事务或者用户自定义的切面。从刚才的example中可以看出在动态代理的过程中可以插入自定义的doBefore或者After这种公共动作，AOP就是将这些公共动作抽取成一个类，这个类即是切面aspect，通过配置pointcut切入点和通知类型可以将类中的这些方法以不同形式切入被代理的target方法。</p>
+<p>如图：<br><img src="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/%E5%8D%9A%E5%AE%A2%E9%BB%98%E8%AE%A4/AOP_1589612782417.jpg" alt="AOP"></p>
+<h2 id="IOC"><a href="#IOC" class="headerlink" title="IOC"></a>IOC</h2><h3 id="依赖倒置？"><a href="#依赖倒置？" class="headerlink" title="依赖倒置？"></a>依赖倒置？</h3><p>在网上查阅了部分资料，Spring的IOC使得开发更加便利，底层之间复杂的依赖关系交由Spring进行处理这点是毋庸置疑的，还有的观点说IOC遵循了依赖倒置的原则，例如同样设计一辆车，可以从先造一个合适的轮子(比如17寸可能是个不错的选择)-&gt;根据轮子造底盘-&gt;根据底盘造车身-&gt;整车，也可以反过来整车-&gt;车身-&gt;底盘-&gt;轮子，反过来的意思是：如果我想造辆车，一个正常的车是需要一个车身的，同理一个正常的底盘不能没有轮胎，但是这并不意味着轮胎必须要按照17寸的，可以随时提供一个，只要是合格的底盘轮胎即可。<br>这里反着来的部分我认为其实并不算严格意义上的依赖，底盘还是需要轮胎，只不过从具体的角度来说，一个轮胎只要是复合底盘的就是合格的，单纯看这一个局部是符合依赖倒置的原则，所以依赖注入可以认为是 底盘依赖合适的轮胎，17寸轮胎插入底盘可以看成这个依赖关系注入进来，实现了反转</p>
+<h3 id="依赖图"><a href="#依赖图" class="headerlink" title="依赖图"></a>依赖图</h3><p><img src="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/%E5%8D%9A%E5%AE%A2%E9%BB%98%E8%AE%A4/IOC.jpg" alt="依赖图"></p>
+<h3 id="IOC的XML"><a href="#IOC的XML" class="headerlink" title="IOC的XML"></a>IOC的XML</h3><p>IOC的XML实现配置中bean可以约等于：对象-id = new class地址，ref也是同样的道理，所以IOC是不是等价于简单的在原来的面向对象基础上增加了setter等接口呢，我认为这只是表象，IOC的灵魂在于bean容器的依赖管理</p>
+<h3 id="依赖管理"><a href="#依赖管理" class="headerlink" title="依赖管理"></a>依赖管理</h3><p>从上述图片中还可以看出，当每一个配件的选型达到上百种时，无论哪种建造方法要去一一查找构造函数、setter或者接口等注入方式是及其复杂的，所以我认为IOC的更主要的便捷体现在对于依赖的管理上，它让程序员可以从复杂的依赖关系中抽离出来而由框架来完成查找和装配</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/Spring/" rel="tag"># Spring</a>
+              <a href="/tags/AOP/" rel="tag"># AOP</a>
+              <a href="/tags/IOC/" rel="tag"># IOC</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/01/12/coq%E9%80%BB%E8%BE%91%E5%AE%9A%E7%90%86%E8%AF%81%E6%98%8E/" rel="prev" title="coq逻辑定理证明">
+      <i class="fa fa-chevron-left"></i> coq逻辑定理证明
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/01/12/SAT%E9%97%AE%E9%A2%98%E5%92%8CDPLL%E7%AE%97%E6%B3%95/" rel="next" title="SAT问题和DPLL算法">
+      SAT问题和DPLL算法 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Spring-AOP%E4%B8%8E%E4%BB%A3%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">Spring-AOP与代理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">静态代理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">动态代理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#example"><span class="nav-number">4.</span> <span class="nav-text">example</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AOP"><span class="nav-number">5.</span> <span class="nav-text">AOP</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IOC"><span class="nav-number"></span> <span class="nav-text">IOC</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E5%80%92%E7%BD%AE%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">依赖倒置？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E5%9B%BE"><span class="nav-number">2.</span> <span class="nav-text">依赖图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IOC%E7%9A%84XML"><span class="nav-number">3.</span> <span class="nav-text">IOC的XML</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E7%AE%A1%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">依赖管理</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Feiyu</p>
+  <div class="site-description" itemprop="description">Sit still, my heart, do not raise your dust. Let the world find its way to you.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">60</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Feiyu Zhan</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'rkEqz5mW38LoOGidQFA2EDTL-gzGzoHsz',
+      appKey     : 'u449xmMSu4rkxkrwbBP2Cs64',
+      placeholder: "在快乐和悲伤都写在我们的脸上的那些时代里...",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

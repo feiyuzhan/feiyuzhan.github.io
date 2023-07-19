@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="在一个程序中，可能存在庞大的if分支，又或者存在对于某些计算机无法求解的条件，例如 x * x * x &#x3D; z，如果想对这个程序进行条件性安全检测，应该如何去做呢？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="形式化方法-混合执行">
+<meta property="og:url" content="http://example.com/2021/01/12/%E5%BD%A2%E5%BC%8F%E5%8C%96%E6%96%B9%E6%B3%95-%E6%B7%B7%E5%90%88%E6%89%A7%E8%A1%8C/index.html">
+<meta property="og:site_name" content="fly rain">
+<meta property="og:description" content="在一个程序中，可能存在庞大的if分支，又或者存在对于某些计算机无法求解的条件，例如 x * x * x &#x3D; z，如果想对这个程序进行条件性安全检测，应该如何去做呢？">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/hexo/%E6%B7%B7%E5%90%88%E6%89%A7%E8%A1%8C.png">
+<meta property="article:published_time" content="2021-01-12T15:19:20.000Z">
+<meta property="article:modified_time" content="2021-01-13T12:12:11.496Z">
+<meta property="article:author" content="Feiyu">
+<meta property="article:tag" content="形式化方法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/hexo/%E6%B7%B7%E5%90%88%E6%89%A7%E8%A1%8C.png">
+
+<link rel="canonical" href="http://example.com/2021/01/12/%E5%BD%A2%E5%BC%8F%E5%8C%96%E6%96%B9%E6%B3%95-%E6%B7%B7%E5%90%88%E6%89%A7%E8%A1%8C/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>形式化方法-混合执行 | fly rain</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">fly rain</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/01/12/%E5%BD%A2%E5%BC%8F%E5%8C%96%E6%96%B9%E6%B3%95-%E6%B7%B7%E5%90%88%E6%89%A7%E8%A1%8C/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Feiyu">
+      <meta itemprop="description" content="Sit still, my heart, do not raise your dust. Let the world find its way to you.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="fly rain">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          形式化方法-混合执行
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-01-12 23:19:20" itemprop="dateCreated datePublished" datetime="2021-01-12T23:19:20+08:00">2021-01-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-01-13 20:12:11" itemprop="dateModified" datetime="2021-01-13T20:12:11+08:00">2021-01-13</time>
+              </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine: </span>
+    
+    <a title="valine" href="/2021/01/12/%E5%BD%A2%E5%BC%8F%E5%8C%96%E6%96%B9%E6%B3%95-%E6%B7%B7%E5%90%88%E6%89%A7%E8%A1%8C/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/01/12/%E5%BD%A2%E5%BC%8F%E5%8C%96%E6%96%B9%E6%B3%95-%E6%B7%B7%E5%90%88%E6%89%A7%E8%A1%8C/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在一个程序中，可能存在庞大的if分支，又或者存在对于某些计算机无法求解的条件，例如 x * x * x = z，如果想对这个程序进行条件性安全检测，应该如何去做呢？</p>
+ <a id="more"></a>
+
+<h3 id="符号执行"><a href="#符号执行" class="headerlink" title="符号执行"></a>符号执行</h3><p>对于 if(x &gt;0)这样的分支，使用值去穷举显然是无法得到解的，因为x可能取的值有无穷多个，事实上我们通过路径的穷举来实现，例如</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">if(x&gt;0)&#123;</span><br><span class="line">	if(y&gt;1)&#123;</span><br><span class="line">		z &#x3D; x&#x2F;y;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这段代码实际上的分支路径有 x&lt;=0, x&gt;0 &amp;&amp; y&gt;1, x&gt;0 &amp;&amp;y&lt;=1三条，而除零错误只有x&gt;0 &amp;&amp; y&gt;1 路劲下才会遍历到，所以不会触发</p>
+<p>但是符号执行存在一些问题，第一个问题是可能存在路劲爆炸，每一条分支使得路劲的个数呈指数级上升，当分支数过多的时候就会导致路劲爆炸，无法穷举这些路径。第二个问题是符合执行的危险条件的表达式的方程对于计算机来说有时候是无解的，例如 z = x<em>x</em>x（计算机是无法求解这个表达式的）</p>
+<h3 id="混合执行"><a href="#混合执行" class="headerlink" title="混合执行"></a>混合执行</h3><p>对于拥有过于复杂的分支的程序，如果使用穷举结合符合执行有时候是一个解决问题的方法</p>
+<p><img src="https://feiyu-1300032637.cos.ap-shanghai.myqcloud.com/hexo/%E6%B7%B7%E5%90%88%E6%89%A7%E8%A1%8C.png" alt="混合执行"></p>
+<p>混合执行维持两套内存模型，实际在结合路径分支进行穷举，如果当前分支执行完成后对当前分支进行取反作为下一次的具体输入的范围来源，避免了路径的指数级累加，并且对于无法求解的方程也可以使用具体值进行尝试</p>
+<p>e.g:对于下面这样一个函数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">loop(m,n)&#123;</span><br><span class="line">	while(m &lt; n)&#123;</span><br><span class="line">		if(m &gt; 0)&#123;</span><br><span class="line">		   m &#x3D; m * 2;</span><br><span class="line">		&#125;</span><br><span class="line">		else&#123;</span><br><span class="line">		  if(m &#x3D;&#x3D; 0)&#123;</span><br><span class="line">			   m &#x3D; 1;</span><br><span class="line">			&#125;</span><br><span class="line">			else&#123;</span><br><span class="line">			   m &#x3D; m * -1;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	return m;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样一个循环，将其映射成抽象的AST形式如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"># test code</span><br><span class="line">func_loop &#x3D; Function(&quot;loop&quot;, [&quot;m&quot;, &quot;n&quot;],</span><br><span class="line">                     [StmWhile(ExpBop(ExpVar(&quot;m&quot;), ExpVar(&quot;n&quot;), BOp.LT),</span><br><span class="line">                               [StmIf(ExpBop(ExpVar(&quot;m&quot;), ExpNum(0), BOp.GT),</span><br><span class="line">                                      [StmAssign(&quot;m&quot;, ExpBop(ExpVar(&quot;m&quot;), ExpNum(2), BOp.MUL))],</span><br><span class="line">                                      [StmIf(ExpBop(ExpVar(&quot;m&quot;), ExpNum(0), BOp.EQ),</span><br><span class="line">                                             [StmAssign(&quot;m&quot;, ExpNum(1))],</span><br><span class="line">                                             [StmAssign(&quot;m&quot;, ExpBop(ExpVar(&quot;m&quot;), ExpNum(-1), BOp.MUL))])])</span><br><span class="line">                                ])</span><br><span class="line">                     ], ExpVar(&quot;m&quot;))</span><br><span class="line">  </span><br><span class="line"># 混合执行函数</span><br><span class="line">  def concolic_executor(func, init_params, try_times):</span><br><span class="line">    print(&quot;最大尝试次数threshold  &#x3D; &quot;, try_times)</span><br><span class="line">    init_concrete &#x3D; dict(zip(func.args, init_params))</span><br><span class="line">    print(f&quot;First Try, Input Value: &#123;init_concrete&#125;&quot;)</span><br><span class="line">    memory, _ &#x3D; concolic_func(func, init_concrete.copy())</span><br><span class="line">    print(memory)</span><br><span class="line"></span><br><span class="line">    # random select and negate one condition from previous result</span><br><span class="line">    # and use z3 to generate a input to do next concolic execution</span><br><span class="line">    for try_time in range(2, try_times+1, 1):</span><br><span class="line">        random_idx &#x3D; random.randrange(0, len(memory.path_condition))</span><br><span class="line">        memory.path_condition[random_idx] &#x3D; neg_exp(memory.path_condition[random_idx])</span><br><span class="line">        ret, solver &#x3D; check_cond(memory)</span><br><span class="line"></span><br><span class="line">        if ret &#x3D;&#x3D; sat:</span><br><span class="line">            # use z3 result update new input values</span><br><span class="line">            model &#x3D; solver.model()</span><br><span class="line">            for dec in model.decls():</span><br><span class="line">                if dec.name() in func.args:</span><br><span class="line">                    init_concrete[dec.name()] &#x3D; model[dec].as_long()</span><br><span class="line"></span><br><span class="line">            print(f&quot;Try times: &#123;try_time&#125;, Input Value: &#123;init_concrete&#125;&quot;)</span><br><span class="line">            memory, _ &#x3D; concolic_func(func, init_concrete.copy())</span><br><span class="line">            print(memory)</span><br><span class="line">        else:</span><br><span class="line">            print(f&quot;Try times: &#123;try_time&#125;, Path conditions got UNSAT&#x2F;UNKNOWN from z3&quot;)</span><br><span class="line">            print(f&quot;Conditions try to Solve: &#123;solver&#125;\n&quot;)</span><br><span class="line">                   </span><br></pre></td></tr></table></figure>
+<p>如果将最大尝试次数设为10，执行concolic_executor(func_loop, [2, 31], 10)，则可以得到如下结果：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line">threshold  &#x3D;  10</span><br><span class="line">First Try, Input Value: &#123;&#39;m&#39;: 2, &#39;n&#39;: 31&#125;</span><br><span class="line">Arguments: m,n</span><br><span class="line">Path Condition: m &gt; 0,m &lt; n</span><br><span class="line">Actual Table: m &#x3D; 4,n &#x3D; 31</span><br><span class="line">Symbol Table: </span><br><span class="line">	m &#x3D; m * 2</span><br><span class="line">	n &#x3D; n</span><br><span class="line"></span><br><span class="line">Try times: 2, Input Value: &#123;&#39;m&#39;: 1, &#39;n&#39;: 1&#125;</span><br><span class="line">Arguments: m,n</span><br><span class="line">Path Condition: m &gt;&#x3D; n</span><br><span class="line">Actual Table: m &#x3D; 1,n &#x3D; 1</span><br><span class="line">Symbol Table: </span><br><span class="line">	m &#x3D; m</span><br><span class="line">	n &#x3D; n</span><br><span class="line"></span><br><span class="line">Try times: 3, Input Value: &#123;&#39;m&#39;: 0, &#39;n&#39;: 1&#125;</span><br><span class="line">Arguments: m,n</span><br><span class="line">Path Condition: m &#x3D;&#x3D; 0,m &lt;&#x3D; 0,m &lt; n</span><br><span class="line">Actual Table: m &#x3D; 1,n &#x3D; 1</span><br><span class="line">Symbol Table: </span><br><span class="line">	m &#x3D; 1</span><br><span class="line">	n &#x3D; n</span><br><span class="line"></span><br><span class="line">Try times: 4, Input Value: &#123;&#39;m&#39;: -1, &#39;n&#39;: 0&#125;</span><br><span class="line">Arguments: m,n</span><br><span class="line">Path Condition: m !&#x3D; 0,m &lt;&#x3D; 0,m &lt; n</span><br><span class="line">Actual Table: m &#x3D; 1,n &#x3D; 0</span><br><span class="line">Symbol Table: </span><br><span class="line">	m &#x3D; m * -1</span><br><span class="line">	n &#x3D; n</span><br><span class="line"></span><br><span class="line">Try times: 5, Input Value: &#123;&#39;m&#39;: -1, &#39;n&#39;: -1&#125;</span><br><span class="line">Arguments: m,n</span><br><span class="line">Path Condition: m &gt;&#x3D; n</span><br><span class="line">Actual Table: m &#x3D; -1,n &#x3D; -1</span><br><span class="line">Symbol Table: </span><br><span class="line">	m &#x3D; m</span><br><span class="line">	n &#x3D; n</span><br><span class="line"></span><br><span class="line">Try times: 6, Input Value: &#123;&#39;m&#39;: 0, &#39;n&#39;: 1&#125;</span><br><span class="line">Arguments: m,n</span><br><span class="line">Path Condition: m &#x3D;&#x3D; 0,m &lt;&#x3D; 0,m &lt; n</span><br><span class="line">Actual Table: m &#x3D; 1,n &#x3D; 1</span><br><span class="line">Symbol Table: </span><br><span class="line">	m &#x3D; 1</span><br><span class="line">	n &#x3D; n</span><br><span class="line"></span><br><span class="line">Try times: 7, Input Value: &#123;&#39;m&#39;: 0, &#39;n&#39;: 0&#125;</span><br><span class="line">Arguments: m,n</span><br><span class="line">Path Condition: m &gt;&#x3D; n</span><br><span class="line">Actual Table: m &#x3D; 0,n &#x3D; 0</span><br><span class="line">Symbol Table: </span><br><span class="line">	m &#x3D; m</span><br><span class="line">	n &#x3D; n</span><br><span class="line"></span><br><span class="line">Try times: 8, Input Value: &#123;&#39;m&#39;: 0, &#39;n&#39;: 1&#125;</span><br><span class="line">Arguments: m,n</span><br><span class="line">Path Condition: m &#x3D;&#x3D; 0,m &lt;&#x3D; 0,m &lt; n</span><br><span class="line">Actual Table: m &#x3D; 1,n &#x3D; 1</span><br><span class="line">Symbol Table: </span><br><span class="line">	m &#x3D; 1</span><br><span class="line">	n &#x3D; n</span><br><span class="line"></span><br><span class="line">Try times: 9, Input Value: &#123;&#39;m&#39;: -1, &#39;n&#39;: 0&#125;</span><br><span class="line">Arguments: m,n</span><br><span class="line">Path Condition: m !&#x3D; 0,m &lt;&#x3D; 0,m &lt; n</span><br><span class="line">Actual Table: m &#x3D; 1,n &#x3D; 0</span><br><span class="line">Symbol Table: </span><br><span class="line">	m &#x3D; m * -1</span><br><span class="line">	n &#x3D; n</span><br><span class="line"></span><br><span class="line">Try times: 10, Input Value: &#123;&#39;m&#39;: 0, &#39;n&#39;: 1&#125;</span><br><span class="line">Arguments: m,n</span><br><span class="line">Path Condition: m &#x3D;&#x3D; 0,m &lt;&#x3D; 0,m &lt; n</span><br><span class="line">Actual Table: m &#x3D; 1,n &#x3D; 1</span><br><span class="line">Symbol Table: </span><br><span class="line">	m &#x3D; 1</span><br><span class="line">	n &#x3D; n</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br></pre></td></tr></table></figure>
+<p>可以看到在给定的次数中，程序遍历到了所有可能的路径，而且对m和n进行了随机取值，虽然不会遍历到所有可能的m、n取值，但是随着尝试次数的增大，很大可能可以覆盖可能的路径</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%BD%A2%E5%BC%8F%E5%8C%96%E6%96%B9%E6%B3%95/" rel="tag"># 形式化方法</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/01/12/%E6%8B%B7%E8%B4%9D%E6%8E%A7%E5%88%B6%E4%B8%8E%E8%B5%8B%E5%80%BC%E8%BF%90%E7%AE%97%E7%AD%89/" rel="prev" title="拷贝控制与赋值运算等">
+      <i class="fa fa-chevron-left"></i> 拷贝控制与赋值运算等
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/01/12/%E5%B9%B6%E5%8F%91%E7%9B%B8%E5%85%B3%E5%9B%BE%E7%89%87%E5%AD%98%E6%A1%A3/" rel="next" title="并发相关图片存档">
+      并发相关图片存档 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%A6%E5%8F%B7%E6%89%A7%E8%A1%8C"><span class="nav-number">1.</span> <span class="nav-text">符号执行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%B7%E5%90%88%E6%89%A7%E8%A1%8C"><span class="nav-number">2.</span> <span class="nav-text">混合执行</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Feiyu</p>
+  <div class="site-description" itemprop="description">Sit still, my heart, do not raise your dust. Let the world find its way to you.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">60</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Feiyu Zhan</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'rkEqz5mW38LoOGidQFA2EDTL-gzGzoHsz',
+      appKey     : 'u449xmMSu4rkxkrwbBP2Cs64',
+      placeholder: "在快乐和悲伤都写在我们的脸上的那些时代里...",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="在图的问题中，常常会碰到这样一类问题，对于N个点的不同集合，很多点两两之间有等价的可传递的联系，这种联系将它们分成若干类，如果能顺利遍历这些联系并将它们正确分类，问题往往迎刃而解">
+<meta property="og:type" content="article">
+<meta property="og:title" content="求连通分量个数问题">
+<meta property="og:url" content="http://example.com/2021/01/12/%E6%B1%82%E8%BF%9E%E9%80%9A%E5%88%86%E9%87%8F%E4%B8%AA%E6%95%B0%E9%97%AE%E9%A2%98/index.html">
+<meta property="og:site_name" content="fly rain">
+<meta property="og:description" content="在图的问题中，常常会碰到这样一类问题，对于N个点的不同集合，很多点两两之间有等价的可传递的联系，这种联系将它们分成若干类，如果能顺利遍历这些联系并将它们正确分类，问题往往迎刃而解">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://assets.leetcode.com/uploads/2020/12/24/graph1.jpg">
+<meta property="og:image" content="https://assets.leetcode.com/uploads/2020/12/24/graph2.jpg">
+<meta property="article:published_time" content="2021-01-12T15:19:20.000Z">
+<meta property="article:modified_time" content="2021-01-13T12:09:14.111Z">
+<meta property="article:author" content="Feiyu">
+<meta property="article:tag" content="leetcode">
+<meta property="article:tag" content="图算法">
+<meta property="article:tag" content="分类问题">
+<meta property="article:tag" content="并查集">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://assets.leetcode.com/uploads/2020/12/24/graph1.jpg">
+
+<link rel="canonical" href="http://example.com/2021/01/12/%E6%B1%82%E8%BF%9E%E9%80%9A%E5%88%86%E9%87%8F%E4%B8%AA%E6%95%B0%E9%97%AE%E9%A2%98/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>求连通分量个数问题 | fly rain</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">fly rain</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/01/12/%E6%B1%82%E8%BF%9E%E9%80%9A%E5%88%86%E9%87%8F%E4%B8%AA%E6%95%B0%E9%97%AE%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Feiyu">
+      <meta itemprop="description" content="Sit still, my heart, do not raise your dust. Let the world find its way to you.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="fly rain">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          求连通分量个数问题
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-01-12 23:19:20" itemprop="dateCreated datePublished" datetime="2021-01-12T23:19:20+08:00">2021-01-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-01-13 20:09:14" itemprop="dateModified" datetime="2021-01-13T20:09:14+08:00">2021-01-13</time>
+              </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine: </span>
+    
+    <a title="valine" href="/2021/01/12/%E6%B1%82%E8%BF%9E%E9%80%9A%E5%88%86%E9%87%8F%E4%B8%AA%E6%95%B0%E9%97%AE%E9%A2%98/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2021/01/12/%E6%B1%82%E8%BF%9E%E9%80%9A%E5%88%86%E9%87%8F%E4%B8%AA%E6%95%B0%E9%97%AE%E9%A2%98/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在图的问题中，常常会碰到这样一类问题，对于N个点的不同集合，很多点两两之间有等价的可传递的联系，这种联系将它们分成若干类，如果能顺利遍历这些联系并将它们正确分类，问题往往迎刃而解</p>
+ <a id="more"></a>
+
+<p>在刚开始遇到这类的问题的时候，我的思路是对于A、B两个点的集合而言，如果A和B中出现了重合的点，则合并A、B集合，这样重复直到集合的数量不再改变。这样做的问题在于复杂度过高，并且需要在迭代set的时候进行修改容易出错。实际上用标记的方式来代替set的迭代更简单效率更高</p>
+<p>这类问题的标记方法主要有三种：</p>
+<ul>
+<li>DFS</li>
+<li>BFS</li>
+<li>并查集</li>
+</ul>
+<p>DFS和BFS在遍历的时候需要借助另外的空间来标记当前节点是否已经被访问过，并查集需要标记当前节点属于哪个集合</p>
+<h4 id="547-省份数量"><a href="#547-省份数量" class="headerlink" title="547. 省份数量"></a><a target="_blank" rel="noopener" href="https://leetcode-cn.com/problems/number-of-provinces/">547. 省份数量</a></h4><p>难度中等444</p>
+<p>有 <code>n</code> 个城市，其中一些彼此相连，另一些没有相连。如果城市 <code>a</code> 与城市 <code>b</code> 直接相连，且城市 <code>b</code> 与城市 <code>c</code> 直接相连，那么城市 <code>a</code> 与城市 <code>c</code> 间接相连。</p>
+<p><strong>省份</strong> 是一组直接或间接相连的城市，组内不含其他没有相连的城市。</p>
+<p>给你一个 <code>n x n</code> 的矩阵 <code>isConnected</code> ，其中 <code>isConnected[i][j] = 1</code> 表示第 <code>i</code> 个城市和第 <code>j</code> 个城市直接相连，而 <code>isConnected[i][j] = 0</code> 表示二者不直接相连。</p>
+<p>返回矩阵中 <strong>省份</strong> 的数量。</p>
+<p><strong>示例 1：</strong></p>
+<p><img src="https://assets.leetcode.com/uploads/2020/12/24/graph1.jpg" alt="img"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：isConnected &#x3D; [[1,1,0],[1,1,0],[0,0,1]]</span><br><span class="line">输出：2</span><br></pre></td></tr></table></figure>
+<p><strong>示例 2：</strong></p>
+<p><img src="https://assets.leetcode.com/uploads/2020/12/24/graph2.jpg" alt="img"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：isConnected &#x3D; [[1,0,0],[0,1,0],[0,0,1]]</span><br><span class="line">输出：3</span><br></pre></td></tr></table></figure>
+<p><strong>提示：</strong></p>
+<ul>
+<li><code>1 &lt;= n &lt;= 200</code></li>
+<li><code>n == isConnected.length</code></li>
+<li><code>n == isConnected[i].length</code></li>
+<li><code>isConnected[i][j]</code> 为 <code>1</code> 或 <code>0</code></li>
+<li><code>isConnected[i][i] == 1</code></li>
+<li><code>isConnected[i][j] == isConnected[j][i]</code></li>
+</ul>
+<h3 id="DFS解法："><a href="#DFS解法：" class="headerlink" title="DFS解法："></a>DFS解法：</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">findCircleNum</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; isConnected)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//聚类的问题</span></span><br><span class="line">        <span class="keyword">int</span> n = isConnected.size();</span><br><span class="line">        <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">        <span class="function"><span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt; <span class="title">vis</span><span class="params">(n, <span class="literal">false</span>)</span></span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span> ; i&lt;n ; ++i)&#123;</span><br><span class="line">            <span class="keyword">if</span>(vis[i])&#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            vis[i] = <span class="literal">true</span>;</span><br><span class="line">            ++ret;</span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span> ; j&lt;n ; ++j)&#123;</span><br><span class="line">                <span class="comment">//对j的位置进行dfs</span></span><br><span class="line">                <span class="keyword">if</span>(isConnected[i][j] &amp;&amp; !vis[j])&#123;</span><br><span class="line">                    search(isConnected, vis, j);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">search</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; isConnected, <span class="built_in">vector</span>&lt;<span class="keyword">bool</span>&gt; &amp;vis, <span class="keyword">int</span> index)</span></span>&#123;</span><br><span class="line">        vis[index] = <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span> ; i&lt;isConnected.size() ; ++i)&#123;</span><br><span class="line">            <span class="keyword">if</span>(isConnected[index][i] &amp;&amp; !vis[i])&#123;</span><br><span class="line">                search(isConnected, vis, i);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="并查集解法："><a href="#并查集解法：" class="headerlink" title="并查集解法："></a>并查集解法：</h3><ul>
+<li>初始化parent = 自身</li>
+<li>union操作</li>
+<li>查找剩余的root</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">findCircleNum</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; isConnected)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//并查集解法</span></span><br><span class="line">        <span class="keyword">int</span> n = isConnected.size();</span><br><span class="line">        <span class="function"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; <span class="title">parent</span><span class="params">(n)</span></span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span> ; i&lt;n ; ++i)&#123;</span><br><span class="line">            parent[i] = i; <span class="comment">//初始的parent都是自身</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span> ; i&lt;n ; ++i)&#123;</span><br><span class="line">            <span class="comment">// j&gt;i,二维矩阵是对角线对称的</span></span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> j=i+<span class="number">1</span> ; j&lt;n ; ++j)&#123;</span><br><span class="line">                <span class="keyword">if</span>(isConnected[i][j])&#123;</span><br><span class="line">                    unionCity(parent, i, j);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//检查剩余的root数目</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span> ; i&lt;n ; ++i)&#123;</span><br><span class="line">            <span class="keyword">if</span>(parent[i] == i)&#123;</span><br><span class="line">                ++ret;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">findParent</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &amp;parent, <span class="keyword">int</span> index)</span></span>&#123;</span><br><span class="line">        <span class="keyword">int</span> par = parent[index];</span><br><span class="line">        <span class="keyword">while</span>(index != par)&#123;</span><br><span class="line">            index = par;</span><br><span class="line">            par = parent[index];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> par;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">unionCity</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &amp;parent, <span class="keyword">int</span> index1, <span class="keyword">int</span> index2)</span></span>&#123;</span><br><span class="line">        <span class="comment">//两个节点union的时候，可能存在index1的root是A, index2的root是B,</span></span><br><span class="line">        <span class="comment">//需要修改的是A-&gt;B而不是index1和index2的指向 </span></span><br><span class="line">        <span class="keyword">int</span> root1 = findParent(parent, index1);</span><br><span class="line">        <span class="keyword">int</span> root2 = findParent(parent, index2);</span><br><span class="line">        parent[root1] = root2;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h4 id="5650-执行交换操作后的最小汉明距离"><a href="#5650-执行交换操作后的最小汉明距离" class="headerlink" title="5650. 执行交换操作后的最小汉明距离"></a><a target="_blank" rel="noopener" href="https://leetcode-cn.com/problems/minimize-hamming-distance-after-swap-operations/">5650. 执行交换操作后的最小汉明距离</a></h4><p>难度中等5</p>
+<p>给你两个整数数组 <code>source</code> 和 <code>target</code> ，长度都是 <code>n</code> 。还有一个数组 <code>allowedSwaps</code> ，其中每个 <code>allowedSwaps[i] = [ai, bi]</code> 表示你可以交换数组 <code>source</code> 中下标为 <code>ai</code> 和 <code>bi</code>（<strong>下标从 0 开始</strong>）的两个元素。注意，你可以按 <strong>任意</strong> 顺序 <strong>多次</strong> 交换一对特定下标指向的元素。</p>
+<p>相同长度的两个数组 <code>source</code> 和 <code>target</code> 间的 <strong>汉明距离</strong> 是元素不同的下标数量。形式上，其值等于满足 <code>source[i] != target[i]</code> （<strong>下标从 0 开始</strong>）的下标 <code>i</code>（<code>0 &lt;= i &lt;= n-1</code>）的数量。</p>
+<p>在对数组 <code>source</code> 执行 <strong>任意</strong> 数量的交换操作后，返回 <code>source</code> 和 <code>target</code> 间的 <strong>最小汉明距离</strong> 。</p>
+<p><strong>示例 1：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">输入：source &#x3D; [1,2,3,4], target &#x3D; [2,1,4,5], allowedSwaps &#x3D; [[0,1],[2,3]]</span><br><span class="line">输出：1</span><br><span class="line">解释：source 可以按下述方式转换：</span><br><span class="line">- 交换下标 0 和 1 指向的元素：source &#x3D; [2,1,3,4]</span><br><span class="line">- 交换下标 2 和 3 指向的元素：source &#x3D; [2,1,4,3]</span><br><span class="line">source 和 target 间的汉明距离是 1 ，二者有 1 处元素不同，在下标 3 。</span><br></pre></td></tr></table></figure>
+<p><strong>示例 2：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">输入：source &#x3D; [1,2,3,4], target &#x3D; [1,3,2,4], allowedSwaps &#x3D; []</span><br><span class="line">输出：2</span><br><span class="line">解释：不能对 source 执行交换操作。</span><br><span class="line">source 和 target 间的汉明距离是 2 ，二者有 2 处元素不同，在下标 1 和下标 2 。</span><br></pre></td></tr></table></figure>
+<p><strong>示例 3：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：source &#x3D; [5,1,2,4,3], target &#x3D; [1,5,4,2,3], allowedSwaps &#x3D; [[0,4],[4,2],[1,3],[1,4]]</span><br><span class="line">输出：0</span><br></pre></td></tr></table></figure>
+<p><strong>提示：</strong></p>
+<ul>
+<li><code>n == source.length == target.length</code></li>
+<li><code>1 &lt;= n &lt;= 105</code></li>
+<li><code>1 &lt;= source[i], target[i] &lt;= 105</code></li>
+<li><code>0 &lt;= allowedSwaps.length &lt;= 105</code></li>
+<li><code>allowedSwaps[i].length == 2</code></li>
+<li><code>0 &lt;= ai, bi &lt;= n - 1</code></li>
+<li><code>ai != bi</code></li>
+</ul>
+<p>这题一开始使用的DFS做的没做出来，主要没想好如何处理汉明距离的比较，参考了下别人的题解发现可以用集合的元素差异</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">Find</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &amp;parent, <span class="keyword">int</span> x)</span></span>&#123;</span><br><span class="line">        <span class="keyword">int</span> par = parent[x];</span><br><span class="line">        <span class="keyword">while</span>(par != x)&#123;</span><br><span class="line">            x = par;</span><br><span class="line">            par = parent[x];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> par;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">Union</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &amp;parent, <span class="keyword">int</span> n1, <span class="keyword">int</span> n2)</span></span>&#123;</span><br><span class="line">        <span class="keyword">int</span> find1 = Find(parent, n1);</span><br><span class="line">        <span class="keyword">int</span> find2 = Find(parent, n2);</span><br><span class="line">        parent[find1] = find2;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">minimumHammingDistance</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; source, <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; target, <span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&gt;&amp; allowedSwaps)</span> </span>&#123;</span><br><span class="line">        <span class="comment">/*求连通分量的问题</span></span><br><span class="line"><span class="comment">        在这种复杂的结构中DFS和BFS比较复杂</span></span><br><span class="line"><span class="comment">        使用并查集</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        <span class="keyword">int</span> len = source.size();</span><br><span class="line">        <span class="function"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; <span class="title">parent</span><span class="params">(len)</span></span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span> ; i&lt;len ; ++i)&#123;</span><br><span class="line">            parent[i] = i; <span class="comment">//第一步初始化parent数组</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &amp;vec: allowedSwaps)&#123;</span><br><span class="line">            Union(parent, vec[<span class="number">0</span>], vec[<span class="number">1</span>]);<span class="comment">//第二步Union操作</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//第三步处理剩余的root</span></span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">            最小汉明距离可以用两个set之间元素相差的个数来表示</span></span><br><span class="line"><span class="comment">            因为元素可重所以使用unordered_multiset</span></span><br><span class="line"><span class="comment">            如果不在swap数组里的元素s[i]=&#123;source[i]&#125;,</span></span><br><span class="line"><span class="comment">                t[i]=&#123;target[i]&#125;，比较是它们自身的值</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        <span class="built_in">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="built_in">unordered_multiset</span>&lt;<span class="keyword">int</span>&gt;&gt; s, t; </span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span> ; i&lt;len ; ++i)&#123;</span><br><span class="line">            <span class="keyword">int</span> findx = Find(parent, i);</span><br><span class="line">            <span class="comment">//对比source、target两个map的set，不出现在swap数组中的元素这里对比的是下标相对应的值</span></span><br><span class="line">            s[findx].insert(source[i]); </span><br><span class="line">            t[findx].insert(target[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span> ; i&lt;len ; ++i)&#123;</span><br><span class="line">            <span class="comment">//遍历s的set查找对应的t</span></span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">const</span> <span class="keyword">int</span> &amp;sval : s[i])&#123;</span><br><span class="line">                <span class="keyword">if</span>(t[i].find(sval) == t[i].end())&#123;</span><br><span class="line">                    ++ret;</span><br><span class="line">                &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">                    <span class="comment">//可重复set直接erase会删除所有等于target的值</span></span><br><span class="line">                    t[i].erase(t[i].find(sval));</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/leetcode/" rel="tag"># leetcode</a>
+              <a href="/tags/%E5%9B%BE%E7%AE%97%E6%B3%95/" rel="tag"># 图算法</a>
+              <a href="/tags/%E5%88%86%E7%B1%BB%E9%97%AE%E9%A2%98/" rel="tag"># 分类问题</a>
+              <a href="/tags/%E5%B9%B6%E6%9F%A5%E9%9B%86/" rel="tag"># 并查集</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/01/12/%E7%BC%96%E8%AF%91%E4%B8%8Egcc/" rel="prev" title="编译与gcc">
+      <i class="fa fa-chevron-left"></i> 编译与gcc
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/01/12/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E4%B8%8EV%E7%BB%93%E7%82%B9/" rel="next" title="文件系统与V结点">
+      文件系统与V结点 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#547-%E7%9C%81%E4%BB%BD%E6%95%B0%E9%87%8F"><span class="nav-number">1.</span> <span class="nav-text">547. 省份数量</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DFS%E8%A7%A3%E6%B3%95%EF%BC%9A"><span class="nav-number"></span> <span class="nav-text">DFS解法：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E6%9F%A5%E9%9B%86%E8%A7%A3%E6%B3%95%EF%BC%9A"><span class="nav-number"></span> <span class="nav-text">并查集解法：</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#5650-%E6%89%A7%E8%A1%8C%E4%BA%A4%E6%8D%A2%E6%93%8D%E4%BD%9C%E5%90%8E%E7%9A%84%E6%9C%80%E5%B0%8F%E6%B1%89%E6%98%8E%E8%B7%9D%E7%A6%BB"><span class="nav-number">1.</span> <span class="nav-text">5650. 执行交换操作后的最小汉明距离</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Feiyu</p>
+  <div class="site-description" itemprop="description">Sit still, my heart, do not raise your dust. Let the world find its way to you.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">34</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">60</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Feiyu Zhan</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : false,
+      appId      : 'rkEqz5mW38LoOGidQFA2EDTL-gzGzoHsz',
+      appKey     : 'u449xmMSu4rkxkrwbBP2Cs64',
+      placeholder: "在快乐和悲伤都写在我们的脸上的那些时代里...",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : 'zh-cn' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
